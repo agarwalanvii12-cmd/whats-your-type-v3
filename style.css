@@ -353,6 +353,44 @@ input[type="text"] { height: 44px; padding: 4px 10px; font-size: 18px; }
   text-align: center;
 }
 
+/* ---------- DRAW YOURSELF ---------- */
+.draw-stack { gap: 12px; padding: 14px 12px 18px; }
+.draw-head { position: relative; }
+.draw-head .sticker { position: absolute; top: -2px; right: 0; }
+.draw-area { display: grid; grid-template-columns: 44px 1fr; gap: 6px; align-items: start; }
+.tools { display: flex; flex-direction: column; gap: 6px; }
+.tool-btn { display: grid; place-items: center; width: 44px; height: 44px; min-width: 0; min-height: 0; padding: 0; }
+.tool-btn:active { padding: 0; }
+.tool-btn img { width: 32px; image-rendering: pixelated; }
+.draw-canvas { position: relative; line-height: 0; }
+.draw-canvas canvas { display: block; touch-action: none; box-shadow: 0 0 0 2px var(--ink), 4px 4px 0 2px rgba(0, 0, 0, .18); }
+.draw-overlay {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+  line-height: 1.2;
+  background: rgba(255, 255, 255, .6);
+}
+.draw-overlay[hidden] { display: none; }
+.draw-canvas.locked .draw-overlay { background: transparent; }
+.draw-overlay .sticker { font-size: 20px; padding: 8px 18px 6px; box-shadow: 3px 3px 0 var(--ink); }
+.palette-bar { display: flex; gap: 6px; align-items: stretch; }
+.current-color { flex: none; width: 44px; border: 2px solid var(--ink); box-shadow: inset 0 0 0 2px #fff; }
+.swatches { flex: 1; display: grid; grid-template-columns: repeat(14, 1fr); gap: 2px; }
+.swatch {
+  min-width: 0;
+  min-height: 0;
+  height: 26px;
+  padding: 0;
+  border: 1px solid var(--ink);
+  box-shadow: inset -1px -1px rgba(255, 255, 255, .5), inset 1px 1px rgba(0, 0, 0, .25);
+}
+.swatch:active { padding: 0; }
+.swatch.on { outline: 2px solid var(--ink); outline-offset: 1px; position: relative; z-index: 1; }
+.avatar-preview { width: 144px; height: 144px; image-rendering: pixelated; box-shadow: 0 0 0 2px var(--ink); }
+
 /* ---------- TASKBAR ---------- */
 .taskbar {
   position: fixed;
