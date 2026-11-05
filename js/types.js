@@ -1,5 +1,5 @@
 /* =========================================================
-   types.js · the 16 types (scoring + compatibility in step 5)
+   types.js · the 16 types, card stats and compatibility
    Code letters: Bold/Light · Grid/Freeform · Retro/New · Kerner/Vibes
    ========================================================= */
 (function () {
@@ -40,5 +40,39 @@
     LFRV: { name: 'The Scrapbook Heart',  font: 'Caveat',           weight: 400 },
     LFNK: { name: 'The Soft Futurist',    font: 'Space Grotesk',    weight: 300 },
     LFNV: { name: 'The Cloud Doodler',    font: 'Comfortaa',        weight: 400 },
+  };
+
+  /* ---------- Type Card stat bars (each 0..1) ----------
+     Built from what you actually did in the challenges and drawing. */
+  W.cardStats = function (results = {}, draw = {}) {
+    const r = i => results[i] || {};
+    const c = v => Math.max(0, Math.min(1, v || 0));
+    return [
+      { label: 'Loudness',        value: c(r(1).loudness) },
+      { label: 'Grid love',       value: c(r(2).snap ? 0.5 + (r(2).aligned || 0) / 8 : (r(2).aligned || 0) / 4) },
+      { label: 'Nostalgia',       value: c((r(3).retro || 0) / 5) },
+      { label: 'Precision',       value: c(r(4).evenness) },
+      { label: 'Speed',           value: c((r(5).speed || 0) / 4) },          // 4 keys a second fills the bar
+      { label: 'Undo dependency', value: c(((r(5).backspaces || 0) + (draw.undos || 0)) / 6) },
+    ];
+  };
+
+  /* ---------- Compatibility (BRIEF.md section 5) ----------
+     Score each axis, add them up (max 100). */
+  W.compatibility = function (a, b) {
+    const same = i => a[i] === b[i];
+    const parts = [
+      same(0) ? 10 : 30, // Volume: different = headline + body, a classic pairing
+      same(1) ? 25 : 10, // Structure: same = you'd share a grid
+      same(2) ? 15 : 20, // Era: different = old meets new
+      same(3) ? 25 : 5,  // Precision: same = no kerning fights
+    ];
+    const score = parts.reduce((s, n) => s + n, 0);
+    const verdict =
+      score >= 85 ? 'a classic pairing. print it.' :
+      score >= 65 ? 'works with some tracking adjustments.' :
+      score >= 45 ? 'a bold combo. art directors will talk.' :
+                    'font clash. beautiful chaos.';
+    return { score, parts, verdict, pair: `${W.TYPES[a].font} × ${W.TYPES[b].font}` };
   };
 })();

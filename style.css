@@ -542,6 +542,20 @@ input[type="range"]::-moz-range-thumb {
 .key.wide { flex: 5 1 0; max-width: none; }
 .key.del { flex: 2 1 0; max-width: none; }
 
+/* ---------- TYPE CARD ---------- */
+.card-stack { gap: 12px; }
+.card-box { display: grid; place-items: center; min-height: 240px; }
+.card-printing { margin: 0; font-family: var(--term); font-size: 24px; animation: blink 1s steps(1) infinite; }
+.card-img {
+  display: block;
+  width: 100%;
+  max-width: 380px;
+  height: auto;
+  box-shadow: 4px 6px 0 rgba(0, 0, 0, .2);
+  animation: card-pop .5s cubic-bezier(.2, 1.4, .4, 1) both;
+}
+@keyframes card-pop { from { transform: scale(.85) rotate(-3deg); opacity: 0; } }
+
 /* ---------- TASKBAR ---------- */
 .taskbar {
   position: fixed;
@@ -735,5 +749,5 @@ input[type="range"]::-moz-range-thumb {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .boot-tap { animation: none; }
+  .boot-tap, .card-img { animation: none; }
 }

@@ -136,12 +136,33 @@
            { mixCase: false }   keep the text's own capitals (Type Codes)
            { align: 'center' }  centre the lines
   */
-  function ransom(text, size = 32, seed, opts = {}) {
+  /* tiles(text, seed, opts) → the collage as data, one array per word:
+     { glyph, font, bg, ink, em, rot (deg), dy (em), outlined }.
+     ransom() turns it into HTML; the Type Card draws it on a canvas. */
+  function tiles(text, seed, opts = {}) {
     const r = rng(seed == null ? text : seed);
     const nextColor = colorPicker(r, palette().colors);
     const nextFont = fontPicker(r);
     const mixCase = opts.mixCase !== false;
 
+    return text.split(/\s+/).filter(Boolean).map(word => [...word].map(ch => {
+      const font = nextFont();
+      const bg = nextColor();
+      let glyph = ch;
+      if (mixCase && font.lower && r() < 0.3) glyph = ch.toLowerCase();
+      else if (mixCase) glyph = ch.toUpperCase();
+      const jitter = 0.88 + r() * 0.26; // some letters bigger, some smaller
+      return {
+        glyph, font, bg, ink: inkFor(bg),
+        em: font.scale * jitter,
+        rot: (r() - 0.5) * 14,
+        dy: (r() - 0.5) * 0.16,
+        outlined: !!opts.dark && luminance(bg) < 0.03, // show dark tiles on black
+      };
+    }));
+  }
+
+  function ransom(text, size = 32, seed, opts = {}) {
     const wrap = document.createElement('span');
     wrap.className = 'ransom' + (opts.align === 'center' ? ' center' : '');
     wrap.setAttribute('role', 'heading');
@@ -153,29 +174,20 @@
     const longest = Math.max(1, ...text.split(/\s+/).map(w => w.length));
     wrap.style.fontSize = `min(${size}px, calc((min(100cqi, 420px) - 40px) / ${(longest * 1.15).toFixed(2)}))`;
 
-    text.split(/\s+/).filter(Boolean).forEach(word => {
+    tiles(text, seed, opts).forEach(word => {
       const w = document.createElement('span');
       w.className = 'ransom-word';
       w.setAttribute('aria-hidden', 'true');
-      for (const ch of word) {
-        const font = nextFont();
-        const bg = nextColor();
-
-        let glyph = ch;
-        if (mixCase && font.lower && r() < 0.3) glyph = ch.toLowerCase();
-        else if (mixCase) glyph = ch.toUpperCase();
-
-        const jitter = 0.88 + r() * 0.26; // some letters bigger, some smaller
-        const t = document.createElement('span');
-        t.className = 'rt';
-        t.textContent = glyph;
-        styleLetter(t, font, font.scale * jitter);
-        t.style.background = bg;
-        t.style.color = inkFor(bg);
-        if (opts.dark && luminance(bg) < 0.03) t.classList.add('outlined'); // show dark tiles on black
-        t.style.setProperty('--r', ((r() - 0.5) * 14).toFixed(1) + 'deg');
-        t.style.setProperty('--dy', ((r() - 0.5) * 0.16).toFixed(3) + 'em');
-        w.append(t);
+      for (const t of word) {
+        const el = document.createElement('span');
+        el.className = 'rt' + (t.outlined ? ' outlined' : '');
+        el.textContent = t.glyph;
+        styleLetter(el, t.font, t.em);
+        el.style.background = t.bg;
+        el.style.color = t.ink;
+        el.style.setProperty('--r', t.rot.toFixed(1) + 'deg');
+        el.style.setProperty('--dy', t.dy.toFixed(3) + 'em');
+        w.append(el);
       }
       wrap.append(w);
     });
@@ -272,7 +284,7 @@
   }
 
   W.type = {
-    ransom, mag, magButton, sticker, human, label, refresh,
+    ransom, tiles, mag, magButton, sticker, human, label, refresh,
     rng, inkFor, PALETTES, palette, setPalette,
   };
   window.ransom = ransom; // the reusable ransom(text, size, seed)

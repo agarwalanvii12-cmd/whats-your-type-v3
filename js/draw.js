@@ -149,8 +149,10 @@
         if (history.length > 40) history.shift();
         undoBtn.disabled = false;
       };
+      let undos = 0;
       const undo = () => {
         if (phase !== 'drawing' || !history.length) return;
+        undos++;
         cells.splice(0, cells.length, ...history.pop());
         dirty = true;
         undoBtn.disabled = !history.length;
@@ -356,6 +358,7 @@
           colors: new Set(cells.filter(c => c >= 0)).size,
           ranOut: why === 'time',
           defaultFace: empty,
+          undos,
         };
 
         if (empty) {
