@@ -144,6 +144,19 @@
       const m = W.compatibility(me.traits, friend.traits);
       const tA = W.resultFor(me.traits).type, tB = W.resultFor(friend.traits).type;
       W.sound.play(m.score >= 85 ? 'levelup' : 'ding');
+
+      // an AI line on how you two would work together (only shown if it answers)
+      const aiText = h('p', { class: 'human ai-text' });
+      const aiLine = h('div', { class: 'ai-line', hidden: true }, T.label('AI says'), aiText);
+      state.aiCompat = state.aiCompat || {};
+      const key = me.share + '|' + friend.share;
+      const show = text => { aiLine.hidden = false; W.fx.typeOut(aiText, text, 22); };
+      if (state.aiCompat[key]) show(state.aiCompat[key]);
+      else W.ai.compat(me, friend, m.score).then(r => {
+        if (!r) return;
+        state.aiCompat[key] = r.text;
+        if (aiLine.isConnected) show(r.text);
+      });
       if (m.score >= 85) setTimeout(() => W.fx.burst(this.el.querySelector('.compat-stack .ransom')), 200);
 
       // trait by trait: both of you on one scale, and the points it earned
@@ -163,6 +176,7 @@
         T.sticker(`${me.name} × ${friend.name}`, -3),
         T.ransom(m.score + '%', 84, 'score' + m.score, { mixCase: false }),
         T.human(m.verdict),
+        aiLine,
         h('p', { class: 'pair-line' },
           h('span', { style: `font-family:"${tA.font}";font-weight:${tA.weight}` }, tA.font),
           h('span', { class: 'pair-x' }, ' × '),

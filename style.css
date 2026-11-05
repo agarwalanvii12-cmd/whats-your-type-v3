@@ -696,6 +696,24 @@ input[type="range"]::-moz-range-thumb {
   border-top: 2px solid var(--ink);
 }
 
+/* ---------- AI WRITE-UPS ---------- */
+.note-win { width: 100%; max-width: 380px; align-self: center; }
+.note-body { margin: 0; padding: 0; }
+.note-text {
+  min-height: 92px;
+  margin: 0;
+  padding: 10px 12px;
+  background: #fff;
+  box-shadow: inset 1px 1px #808080, inset 2px 2px #0a0a0a;
+  font-family: var(--mono);
+  font-size: 14px;
+  line-height: 1.45;
+}
+.note-tag { display: block; padding: 4px 8px 6px; text-align: right; }
+.ai-line { padding: 8px 12px; background: var(--paper); border: 2px dashed var(--ink); }
+.ai-line[hidden] { display: none; }
+.ai-text { font-size: 20px; }
+
 /* ---------- TASKBAR ---------- */
 .taskbar {
   position: fixed;

@@ -287,8 +287,16 @@
       if (W.live.active) W.live.send({ type: 'card', share: state.share });
 
       const box = h('div', { class: 'card-box' }, h('p', { class: 'card-printing' }, 'Printing card...'));
-      const dl = T.magButton(h('button', { disabled: true }), 'Download PNG', 'dl');
+      const dl = T.magButton(h('button', { disabled: true }), 'Save PNG', 'dl');
       const next = T.magButton(h('button', { class: 'big', onclick: () => W.next() }), 'Compare', 'compare');
+
+      // ask for the AI reading straight away, while the card prints
+      const reading = W.ai.reading(name, result);
+      const noteText = h('p', { class: 'note-text' }, 'thinking...');
+      const noteTag = h('span', { class: 'label note-tag' });
+      const note = h('div', { class: 'window note-win' },
+        h('div', { class: 'title-bar' }, h('div', { class: 'title-bar-text' }, 'reading.txt - Notepad')),
+        h('div', { class: 'window-body note-body' }, noteText, noteTag));
 
       const title = T.ransom(shortName(type), 48, 'type' + type.font);
       title.classList.add('waiting');
@@ -298,6 +306,7 @@
         title,
         T.human(type.line),
         box,
+        note,
         isIOS() && T.label('Tip: long-press the card to save'),
         h('div', { class: 'actions' }, h('div', { class: 'row' }, dl, next))));
 
@@ -313,6 +322,12 @@
         W.sound.play('levelup');
         setTimeout(() => W.fx.burst(title), 350);
         state.card = { name, traits, result, dataURL: card.dataURL };
+        reading.then(r => {
+          if (this.token !== token) return;
+          W.fx.typeOut(noteText, r.text, 22);
+          noteTag.textContent = r.ai ? 'Written by AI' : 'Offline reading';
+          state.card.reading = r.text;
+        });
         const file = `whats-your-type-${shortName(type).replace(/\s+/g, '-')}-${name.replace(/[^a-z0-9]+/gi, '-')}.png`;
         dl.disabled = false;
         dl.addEventListener('click', () => W.downloadCard(card, file));
