@@ -173,7 +173,16 @@
       T.magButton(solo, 'Play solo');
       input.addEventListener('keydown', e => { if (e.key === 'Enter') solo.click(); });
 
+      // Opened a friend's link before playing? Say who's waiting.
+      const invite = state.friend && h('div', { class: 'invite' },
+        T.sticker(`${state.friend.name} sent a code`, 3, 'tag'),
+        T.human('play to compare.'));
+      // Played before on this device? You can compare straight away.
+      const enterCode = W.net.loadMine() && T.magButton(
+        h('button', { onclick: () => W.go('compat') }), 'Compare a code', 'enter-code');
+
       el.append(h('div', { class: 'stack' },
+        invite,
         T.sticker('MBTI for designers', -4),
         T.ransom("What's your type?", 40, 'lobby'),
         T.human('draw. play. get typed.'),
@@ -185,6 +194,7 @@
           T.magButton(h('button', { disabled: true }), 'Create room'),
           T.magButton(h('button', { disabled: true }), 'Join room')),
         h('p', { class: 'label muted' }, 'Rooms coming soon'),
+        enterCode,
       ));
     },
   };
@@ -402,6 +412,19 @@
     document.addEventListener('keydown', e => { if (e.key === 'Escape') { closeStartMenu(); setPaletteOpen(false); $('.modal')?.remove(); } });
 
     // Dev shortcut: #draw, #challenge3, #card ...
+    // Opened from a friend's QR / link (#c=CODE)?
+    const link = location.hash.match(/^#c=([A-Za-z0-9_-]+)/);
+    if (link) {
+      history.replaceState(null, '', location.pathname + location.search);
+      const friend = W.net.decode(link[1]);
+      if (friend) {
+        W.state.friend = friend;
+        // already have a card on this device → compare now; otherwise play first
+        W.go(W.net.loadMine() ? 'compat' : 'lobby');
+        return;
+      }
+    }
+
     const jump = location.hash.slice(1);
     if (jump && jump !== 'boot' && W.screens[jump]) {
       W.state.name = W.state.name || 'Tester';
