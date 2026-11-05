@@ -79,6 +79,10 @@
 
     next.enter(el, W.state);
     if (W.live) W.live.onEnter(name);
+    // Win95-style wipe as each new screen appears
+    el.classList.remove('swap-in');
+    void el.offsetWidth;
+    el.classList.add('swap-in');
   };
   W.next = () => W.go(ORDER[ORDER.indexOf(current) + 1] || 'lobby');
   W.current = () => current;
@@ -120,6 +124,8 @@
       boot.classList.remove('ready');
       tap.hidden = true;
       fill.style.width = '0%';
+      W.fx.pixelReveal($('#boot-logo'), 'heart', 9); // heart appears pixel by pixel
+      let line = -1;
 
       let pct = 0;
       this.timer = setInterval(() => {
@@ -127,7 +133,8 @@
         // snap to whole blocks so it looks chunky
         fill.style.width = Math.floor(pct / 8) * 8 + (pct >= 100 ? 4 : 0) + '%';
         bar.setAttribute('aria-valuenow', Math.round(pct));
-        status.textContent = BOOT_LINES[Math.floor((pct / 100) * (BOOT_LINES.length - 1))];
+        const nextLine = Math.floor((pct / 100) * (BOOT_LINES.length - 1));
+        if (nextLine !== line) { line = nextLine; W.fx.typeOut(status, BOOT_LINES[line]); } // typewriter
         if (pct >= 100) {
           clearInterval(this.timer);
           this.timer = null;
@@ -135,7 +142,7 @@
           tap.hidden = false;
           tap.focus();
         }
-      }, 180);
+      }, 240);
 
       this.onTap = () => {
         if (!boot.classList.contains('ready')) return;
@@ -562,7 +569,6 @@
 
   /* ---------- START ---------- */
   function init() {
-    $('#boot-logo').src = W.iconURL('heart', 9);
     $('#title-icon').src = W.iconURL('heart', 2);
     buildBootTitle();
     W.wallpaper.init();

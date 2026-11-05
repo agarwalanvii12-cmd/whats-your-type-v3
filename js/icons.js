@@ -286,6 +286,10 @@
 
   const cache = {};
 
+  // raw pixel rows + colours, for effects that draw icons pixel by pixel
+  W.iconRows = name => ICONS[name];
+  W.ICON_PAL = PAL;
+
   // Returns a PNG data URL of the icon, each pixel drawn as a scale×scale square
   W.iconURL = function (name, scale = 3) {
     const key = name + '@' + scale;

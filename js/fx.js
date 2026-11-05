@@ -3,7 +3,10 @@
 
    WYT.fx.shake()        screen shake + glitch (time ran out)
    WYT.fx.burst(el)      pixel confetti + starbursts from an element
-   WYT.fx.init()         pixel cursors + twinkling sky starbursts
+   WYT.fx.pixelReveal()  draw a pixel icon one pixel at a time (boot logo)
+   WYT.fx.typeOut()      typewriter text (boot status lines)
+   WYT.fx.attract        idle screensaver of sample Type Cards
+   WYT.fx.init()         pixel cursors, sky starbursts, attract mode
 
    Everything respects "reduce motion" in the phone/computer settings.
    ========================================================= */
@@ -75,8 +78,122 @@
     document.getElementById('wallpaper').after(box); // just above the sky
   }
 
+  /* boot logo: a pixel icon appears one pixel at a time, then pulses */
+  function pixelReveal(canvas, name, scale, ms = 800) {
+    const rows = W.iconRows(name), pal = W.ICON_PAL;
+    const cols = Math.max(...rows.map(r => r.length));
+    canvas.width = cols * scale;
+    canvas.height = rows.length * scale;
+    const ctx = canvas.getContext('2d');
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    const px = [];
+    rows.forEach((row, y) => [...row].forEach((ch, x) => { if (pal[ch]) px.push([x, y, pal[ch]]); }));
+    if (calm()) { px.forEach(([x, y, c]) => { ctx.fillStyle = c; ctx.fillRect(x * scale, y * scale, scale, scale); }); return; }
+    px.sort(() => Math.random() - 0.5);
+    canvas.classList.remove('pulse');
+    const start = performance.now();
+    let drawn = 0;
+    const step = now => {
+      const target = Math.min(px.length, Math.ceil(((now - start) / ms) * px.length));
+      for (; drawn < target; drawn++) {
+        const [x, y, c] = px[drawn];
+        ctx.fillStyle = c;
+        ctx.fillRect(x * scale, y * scale, scale, scale);
+      }
+      if (drawn < px.length) requestAnimationFrame(step);
+      else canvas.classList.add('pulse');
+    };
+    requestAnimationFrame(step);
+  }
+
+  /* typewriter: text appears one letter at a time, with a caret */
+  function typeOut(el, text, msPerChar = 28) {
+    clearInterval(el._typing);
+    if (calm()) { el.textContent = text; return; }
+    let i = 0;
+    el.textContent = '';
+    el._typing = setInterval(() => {
+      i++;
+      el.textContent = text.slice(0, i);
+      if (i >= text.length) clearInterval(el._typing);
+    }, msPerChar);
+  }
+
+  /* ---------- ATTRACT MODE ----------
+     Left alone on the lobby for a while (e.g. on the showcase laptop),
+     the screen cycles through sample Type Cards. Any tap wakes it up. */
+  const IDLE_MS = 40000, SWAP_MS = 4500;
+  const SAMPLES = [
+    { name: 'Ada',  face: 0, traits: [0.2, 0.85, 0.9, 0.9, 0.2] },
+    { name: 'Rafa', face: 2, traits: [0.95, 0.15, 0.3, 0.1, 0.9] },
+    { name: 'Mia',  face: 1, traits: [0.3, 0.6, 0.15, 0.7, 0.6] },
+    { name: 'Jun',  face: 0, traits: [0.8, 0.8, 0.9, 0.5, 0.85] },
+  ];
+  const attract = {
+    last: performance.now(), on: false, cards: [], i: 0, el: null, swap: 0,
+    init() {
+      const wake = () => { this.last = performance.now(); };
+      ['pointerdown', 'pointermove', 'keydown', 'touchstart', 'wheel'].forEach(ev =>
+        document.addEventListener(ev, wake, { passive: true, capture: true }));
+      setInterval(() => {
+        const idle = performance.now() - this.last > IDLE_MS;
+        const calmLobby = W.current && W.current() === 'lobby' && !(W.live && W.live.status !== 'idle') &&
+          !document.querySelector('.modal') && document.visibilityState === 'visible';
+        if (idle && calmLobby && !this.on) this.show();
+      }, 2000);
+    },
+    async show() {
+      this.on = true;
+      const h = W.h, T = W.type;
+      const img = h('img', { class: 'attract-card', alt: '' });
+      const caption = h('p', { class: 'human attract-caption' });
+      this.el = h('div', { class: 'attract', role: 'dialog', 'aria-label': 'Sample Type Cards. Tap to play.' },
+        h('div', { class: 'attract-inner' },
+          T.ransom("What's your type?!", 40, 'boot', { dark: true, align: 'center' }),
+          img, caption,
+          h('p', { class: 'attract-tap' }, 'Tap to play')));
+      const close = e => {
+        e.preventDefault();
+        e.stopPropagation();
+        this.hide();
+      };
+      this.el.addEventListener('pointerdown', close);
+      this.onKey = e => close(e);
+      document.addEventListener('keydown', this.onKey, { capture: true });
+      document.body.append(this.el);
+
+      if (!this.cards.length) {
+        for (const s of SAMPLES) {
+          if (!this.on) return;
+          const result = W.resultFor(s.traits);
+          const card = await W.renderCard({ name: s.name, avatar: W.DEFAULT_FACES[s.face], result });
+          this.cards.push({ src: card.dataURL, text: `${s.name} is ${result.type.name.replace(/^The /, 'the ')}.` });
+          if (this.cards.length === 1) this.next(img, caption);
+        }
+      } else this.next(img, caption);
+      this.swap = setInterval(() => this.next(img, caption), SWAP_MS);
+    },
+    next(img, caption) {
+      if (!this.cards.length) return;
+      const c = this.cards[this.i++ % this.cards.length];
+      img.classList.remove('in');
+      void img.offsetWidth;
+      img.src = c.src;
+      img.classList.add('in');
+      caption.textContent = c.text;
+    },
+    hide() {
+      this.on = false;
+      clearInterval(this.swap);
+      document.removeEventListener('keydown', this.onKey, { capture: true });
+      this.el?.remove();
+      this.el = null;
+      this.last = performance.now();
+    },
+  };
+
   W.fx = {
-    shake, burst,
-    init() { cursors(); sparkles(); },
+    shake, burst, pixelReveal, typeOut, attract,
+    init() { cursors(); sparkles(); attract.init(); },
   };
 })();
