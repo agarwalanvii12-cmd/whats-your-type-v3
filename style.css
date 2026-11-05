@@ -148,6 +148,65 @@ label.label { display: block; }
   background: var(--pink);
 }
 
+/* Magazine-letter button labels (js/type.js mag()) */
+.mag-btn { display: flex; align-items: center; justify-content: center; }
+.mag {
+  display: inline-flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: .1em .38em;
+  font-size: 18px;
+  line-height: 1;
+  color: var(--ink);
+}
+.mag-word { display: inline-flex; align-items: center; gap: .03em; }
+.rt.outlined { box-shadow: 0 0 0 2px #fff, 2px 4px 8px rgba(0, 0, 0, .22); }
+.ml {
+  display: inline-block;
+  padding: .04em .05em;
+  line-height: 1;
+  transform: rotate(var(--r, 0deg)) scaleY(var(--sy, 1));
+}
+.ml.tile { padding: .1em .12em .07em; box-shadow: 1px 2px 0 rgba(0, 0, 0, .28); }
+button.big .mag { font-size: 23px; }
+.row button .mag { font-size: 15px; flex-wrap: nowrap; }
+button:disabled .mag { opacity: .55; filter: grayscale(.6); }
+
+/* ---------- COLORS WINDOW ---------- */
+.palette-win {
+  display: none;               /* phone: opens from the Colors menu */
+  position: fixed;
+  z-index: 85;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: min(340px, calc(100vw - 24px));
+  max-height: calc(100% - 40px);
+  flex-direction: column;
+}
+body.palette-open .palette-win { display: flex; }
+.palette-body { display: flex; flex-direction: column; gap: 8px; margin: 6px; overflow-y: auto; }
+.palette-list { display: flex; flex-direction: column; gap: 6px; }
+.pal-row {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: baseline;
+  gap: 6px 10px;
+  min-height: 0;
+  padding: 8px 10px 7px;
+  text-align: left;
+}
+.pal-swatches { grid-column: 1 / -1; display: flex; height: 20px; border: 1px solid var(--ink); }
+.pal-swatch { flex: 1; }
+.pal-name { font-family: var(--mono); font-size: 13px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; }
+.pal-note { font-family: var(--serif); font-style: italic; font-size: 18px; line-height: 1; }
+.pal-row.on {
+  background: #fff;
+  box-shadow: inset -1px -1px #fff, inset 1px 1px #0a0a0a, inset -2px -2px #dfdfdf, inset 2px 2px #808080, 0 0 0 2px var(--navy);
+}
+.pal-row.on .pal-name { color: var(--navy); }
+
 /* ---------- DESKTOP ---------- */
 .desktop {
   position: fixed;
@@ -453,6 +512,7 @@ input[type="text"] { height: 44px; padding: 4px 10px; font-size: 18px; }
   animation: blink 1s steps(1) infinite;
 }
 .boot-tap:active { box-shadow: none; padding: 10px 16px; }
+.boot-tap .mag { font-size: 24px; color: #fff; }
 
 @keyframes blink { 50% { opacity: 0; } }
 
@@ -468,6 +528,19 @@ input[type="text"] { height: 44px; padding: 4px 10px; font-size: 18px; }
     height: min(820px, calc(100% - 32px));
     transform: translate(-50%, -50%);
   }
+}
+
+/* Wide laptop: Colors window docked to the right of Paint, always open */
+@media (min-width: 1100px) {
+  .palette-win {
+    display: flex;
+    left: calc(50% + 260px + 16px);
+    transform: translateY(-50%);
+    width: 236px;
+    max-height: min(820px, calc(100% - 32px - var(--taskbar-h)));
+    margin-top: calc(var(--taskbar-h) / -2);
+  }
+  #palette-close { display: none; }
 }
 
 @media (prefers-reduced-motion: reduce) {

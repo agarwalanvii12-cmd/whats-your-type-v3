@@ -56,7 +56,7 @@
         <button data-bonk><u>F</u>ile</button>
         <button data-bonk><u>E</u>dit</button>
         <button data-bonk><u>V</u>iew</button>
-        <button data-bonk><u>I</u>mage</button>
+        <button id="menu-colors" aria-controls="palette-win" aria-expanded="false"><u>C</u>olors</button>
         <button id="menu-help"><u>H</u>elp</button>
       </nav>
 
@@ -68,6 +68,20 @@
         <p id="status-step" class="status-bar-field">Step 0 of 9</p>
         <p id="status-name" class="status-bar-field">Boot</p>
         <p id="status-mode" class="status-bar-field">solo</p>
+      </div>
+    </section>
+
+    <!-- Colour palettes: docked right of Paint on laptop, a pop-up on phone -->
+    <section id="palette-win" class="window palette-win" aria-label="Colors">
+      <div class="title-bar">
+        <div class="title-bar-text">Colors</div>
+        <div class="title-bar-controls">
+          <button id="palette-close" aria-label="Close"></button>
+        </div>
+      </div>
+      <div class="window-body palette-body">
+        <p class="label">Pick a palette</p>
+        <div id="palette-list" class="palette-list" role="radiogroup" aria-label="Palettes"></div>
       </div>
     </section>
   </main>

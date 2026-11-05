@@ -165,7 +165,8 @@
           W.resetGame();
           W.go('draw');
         },
-      }, 'Play solo');
+      });
+      T.magButton(solo, 'Play solo');
       input.addEventListener('keydown', e => { if (e.key === 'Enter') solo.click(); });
 
       el.append(h('div', { class: 'stack' },
@@ -177,8 +178,8 @@
           input),
         solo,
         h('div', { class: 'row' },
-          h('button', { disabled: true }, 'Create room'),
-          h('button', { disabled: true }, 'Join room')),
+          T.magButton(h('button', { disabled: true }), 'Create room'),
+          T.magButton(h('button', { disabled: true }), 'Join room')),
         h('p', { class: 'label muted' }, 'Rooms coming soon'),
       ));
     },
@@ -193,7 +194,7 @@
           T.ransom(title, 40, title),
           quip && T.human(quip),
           h('div', { class: 'placeholder' }, box()),
-          h('button', { class: 'big', onclick: onNext || (() => W.next()) }, button),
+          T.magButton(h('button', { class: 'big', onclick: onNext || (() => W.next()) }), button),
         ));
       },
     };
@@ -243,6 +244,36 @@
           h('div', { class: 'row end' }, ok))));
     document.body.append(modal);
     ok.focus();
+  }
+
+  /* ---------- COLORS WINDOW (palettes) ----------
+     Laptop (wide): always docked to the right of Paint.
+     Phone / narrow: opens from the Colors menu as a pop-up. */
+  function setPaletteOpen(open) {
+    document.body.classList.toggle('palette-open', open);
+    $('#menu-colors').setAttribute('aria-expanded', String(open));
+  }
+  function buildPalettes() {
+    const list = $('#palette-list');
+    const render = () => {
+      list.replaceChildren(...T.PALETTES.map(p => {
+        const on = p.id === T.palette().id;
+        return h('button', {
+          class: 'pal-row' + (on ? ' on' : ''), role: 'radio', 'aria-checked': String(on),
+          onclick: () => { T.setPalette(p.id); render(); },
+        },
+          h('span', { class: 'pal-swatches' },
+            p.colors.map(c => h('span', { class: 'pal-swatch', style: `background:${c}` }))),
+          h('span', { class: 'pal-name' }, p.name),
+          h('span', { class: 'pal-note' }, p.note));
+      }));
+    };
+    render();
+    $('#menu-colors').addEventListener('click', e => {
+      e.stopPropagation();
+      setPaletteOpen(!document.body.classList.contains('palette-open'));
+    });
+    $('#palette-close').addEventListener('click', () => setPaletteOpen(false));
   }
 
   /* ---------- DESKTOP ICONS ---------- */
@@ -323,6 +354,8 @@
     $('#title-icon').src = W.iconURL('heart', 2);
     buildBootTitle();
     W.wallpaper.init();
+    T.magButton($('#boot-tap'), 'Tap to start', 'boot-tap');
+    buildPalettes();
     buildIcons();
     buildTaskbar();
 
@@ -333,7 +366,7 @@
 
     // Audio may only start after a tap; every tap is a chance to unlock it
     document.addEventListener('pointerdown', () => W.sound.unlock());
-    document.addEventListener('keydown', e => { if (e.key === 'Escape') { closeStartMenu(); $('.modal')?.remove(); } });
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') { closeStartMenu(); setPaletteOpen(false); $('.modal')?.remove(); } });
 
     // Dev shortcut: #draw, #challenge3, #card ...
     const jump = location.hash.slice(1);

@@ -2,11 +2,13 @@
    type.js · the typography kit (collage look)
 
    ransom(text, size, seed, opts)  big ransom-note headings
+   mag(text, seed)                 magazine-letter button labels
    sticker(text, tilt, shape)      small tilted pill / tag labels
    human(text)                     italic serif line (Instrument Serif)
    label(text)                     uppercase mono label (Space Mono)
 
-   Same text + same seed always gives the same collage,
+   Colours come from the active palette (pick one in the Colors
+   window). Same text + same seed always gives the same collage,
    so a heading doesn't reshuffle every time you see it.
    ========================================================= */
 (function () {
@@ -36,26 +38,39 @@
     { family: '"Press Start 2P"',   weight: 400, style: 'normal', scale: 0.78, lower: true },  // pixel
   ];
 
-  /* Whimsical palette: lots of colours that pop, a few neutrals.
-     Letter colour is picked automatically for best contrast. */
-  const COLORS = [
-    '#ff4fa3', // bubblegum pink
-    '#ff8a1f', // tangerine
-    '#ffd23f', // lemon
-    '#9be15d', // lime
-    '#2ec4b6', // mint teal
-    '#3a86ff', // sky blue
-    '#7b2ff7', // grape
-    '#ff3b30', // tomato
-    '#ffb3de', // candy floss
-    '#b8f2ff', // ice
-    '#b388ff', // lilac
-    '#00a86b', // jade
-    '#1d2bb8', // cobalt
-    '#111111', // ink
-    '#ffffff', // white
-    '#f3ead3', // paper
+  /* ---------- PALETTES (colour theory, Paint style) ----------
+     Letter colour is always picked automatically for contrast. */
+  const PALETTES = [
+    { id: 'pop', name: 'Pop', note: 'bright and loud',
+      colors: ['#ff4fa3', '#ff8a1f', '#ffd23f', '#9be15d', '#2ec4b6', '#3a86ff', '#7b2ff7', '#ff3b30', '#111111', '#ffffff'] },
+    { id: 'pastel', name: 'Pastel', note: 'soft tints',
+      colors: ['#ffc8dd', '#ffafcc', '#bde0fe', '#a2d2ff', '#cdb4db', '#fff1a8', '#c1f0c1', '#ffd6a5', '#ffffff', '#f3ead3'] },
+    { id: 'complement', name: 'Complementary', note: 'opposites attract',
+      colors: ['#1d3fbf', '#3a86ff', '#8fb8ff', '#ff7a00', '#ffb056', '#ffd8a8', '#111111', '#ffffff'] },
+    { id: 'analogous', name: 'Sunset', note: 'next-door neighbours',
+      colors: ['#ffbe0b', '#fb5607', '#ff006e', '#ff7096', '#ff9e00', '#c9184a', '#fff3d6', '#111111'] },
+    { id: 'triadic', name: 'Triadic', note: 'three, evenly spaced',
+      colors: ['#e63946', '#ffd60a', '#1d4ed8', '#ff9aa2', '#fff08a', '#8ab4ff', '#111111', '#f3ead3'] },
+    { id: 'mono', name: 'Monochrome', note: 'one hue, many shades',
+      colors: ['#2a0a5e', '#4b1fa3', '#7b2ff7', '#a679ff', '#d4bfff', '#f1e9ff', '#111111', '#ffffff'] },
+    { id: 'paint', name: 'Paint 95', note: 'the classic 16',
+      colors: ['#000000', '#808080', '#800000', '#808000', '#008000', '#008080', '#000080', '#800080',
+               '#ffffff', '#c0c0c0', '#ff0000', '#ffff00', '#00ff00', '#00ffff', '#0000ff', '#ff00ff'] },
   ];
+
+  let paletteId = 'pop';
+  try { paletteId = localStorage.getItem('wyt-palette') || 'pop'; } catch (e) { /* private mode */ }
+  if (!PALETTES.some(p => p.id === paletteId)) paletteId = 'pop';
+
+  const palette = () => PALETTES.find(p => p.id === paletteId);
+
+  function setPalette(id) {
+    if (!PALETTES.some(p => p.id === id)) return;
+    paletteId = id;
+    try { localStorage.setItem('wyt-palette', id); } catch (e) { /* ignore */ }
+    refresh();
+    document.dispatchEvent(new CustomEvent('wyt:palette', { detail: id }));
+  }
 
   /* ---------- colour contrast ---------- */
   function luminance(hex) {
@@ -88,16 +103,43 @@
   }
   const pick = (r, list) => list[Math.floor(r() * list.length)];
 
+  /* Hands out colours for one heading:
+     never the same as the letter before, and always one of the
+     least-used colours so far. With 8+ colours that means no colour
+     shows up more than twice in a heading of up to 16 letters. */
+  function colorPicker(r, colors) {
+    const used = {};
+    let last = null;
+    return function () {
+      const options = colors.filter(c => c !== last);
+      const least = Math.min(...options.map(c => used[c] || 0));
+      const c = pick(r, options.filter(c => (used[c] || 0) === least));
+      used[c] = (used[c] || 0) + 1;
+      last = c;
+      return c;
+    };
+  }
+  function fontPicker(r) {
+    let last = null;
+    return function () {
+      let f;
+      do { f = pick(r, FONTS); } while (f.family === last);
+      last = f.family;
+      return f;
+    };
+  }
+
   /* ---------- ransom(text, size, seed, opts) ----------
      size  biggest letter size in px (shrinks to fit narrow screens)
      seed  any number or string; defaults to the text
-     opts  { dark: true }       no ink tiles (for black backgrounds)
+     opts  { dark: true }       outline very dark tiles (for black backgrounds)
            { mixCase: false }   keep the text's own capitals (Type Codes)
            { align: 'center' }  centre the lines
   */
   function ransom(text, size = 32, seed, opts = {}) {
     const r = rng(seed == null ? text : seed);
-    const colors = opts.dark ? COLORS.filter(c => c !== '#111111') : COLORS;
+    const nextColor = colorPicker(r, palette().colors);
+    const nextFont = fontPicker(r);
     const mixCase = opts.mixCase !== false;
 
     const wrap = document.createElement('span');
@@ -105,45 +147,104 @@
     wrap.setAttribute('role', 'heading');
     wrap.setAttribute('aria-level', String(opts.level || 1));
     wrap.setAttribute('aria-label', text);
+    wrap.dataset.ransom = JSON.stringify([text, size, seed, opts]); // so it can be redrawn
 
     // Shrink so the longest word always fits on one line
     const longest = Math.max(1, ...text.split(/\s+/).map(w => w.length));
     wrap.style.fontSize = `min(${size}px, calc((min(100cqi, 420px) - 40px) / ${(longest * 1.15).toFixed(2)}))`;
 
-    let lastFont = null, lastColor = null;
     text.split(/\s+/).filter(Boolean).forEach(word => {
       const w = document.createElement('span');
       w.className = 'ransom-word';
       w.setAttribute('aria-hidden', 'true');
       for (const ch of word) {
-        // neighbours never share a font or a colour
-        let font, bg;
-        do { font = pick(r, FONTS); } while (font.family === lastFont);
-        do { bg = pick(r, colors); } while (bg === lastColor);
-        lastFont = font.family; lastColor = bg;
+        const font = nextFont();
+        const bg = nextColor();
 
         let glyph = ch;
         if (mixCase && font.lower && r() < 0.3) glyph = ch.toLowerCase();
         else if (mixCase) glyph = ch.toUpperCase();
 
-        const jitter = 0.88 + r() * 0.26;          // some letters bigger, some smaller
+        const jitter = 0.88 + r() * 0.26; // some letters bigger, some smaller
         const t = document.createElement('span');
         t.className = 'rt';
         t.textContent = glyph;
-        t.style.fontFamily = font.family;
-        t.style.fontWeight = font.weight;
-        t.style.fontStyle = font.style;
-        t.style.fontSize = (font.scale * jitter).toFixed(3) + 'em';
+        styleLetter(t, font, font.scale * jitter);
         t.style.background = bg;
         t.style.color = inkFor(bg);
+        if (opts.dark && luminance(bg) < 0.03) t.classList.add('outlined'); // show dark tiles on black
         t.style.setProperty('--r', ((r() - 0.5) * 14).toFixed(1) + 'deg');
         t.style.setProperty('--dy', ((r() - 0.5) * 0.16).toFixed(3) + 'em');
-        t.style.setProperty('--sy', String(font.sy || 1));
         w.append(t);
       }
       wrap.append(w);
     });
     return wrap;
+  }
+
+  function styleLetter(el, font, em) {
+    el.style.fontFamily = font.family;
+    el.style.fontWeight = font.weight;
+    el.style.fontStyle = font.style;
+    el.style.fontSize = em.toFixed(3) + 'em';
+    el.style.setProperty('--sy', String(font.sy || 1));
+  }
+
+  /* ---------- mag(text, seed) ----------
+     Magazine letters for button labels: every letter a different
+     font, about a third of them on a little coloured tile.
+     Put it inside a button; the button keeps the plain text as its label. */
+  function mag(text, seed) {
+    const r = rng(seed == null ? 'mag' + text : seed);
+    const nextColor = colorPicker(r, palette().colors);
+    const nextFont = fontPicker(r);
+
+    const wrap = document.createElement('span');
+    wrap.className = 'mag';
+    wrap.setAttribute('aria-hidden', 'true');
+    wrap.dataset.mag = JSON.stringify([text, seed]);
+
+    text.split(/\s+/).filter(Boolean).forEach(word => {
+      const w = document.createElement('span');
+      w.className = 'mag-word';
+      for (const ch of word) {
+        const font = nextFont();
+        const l = document.createElement('span');
+        l.className = 'ml';
+        l.textContent = font.lower && r() < 0.35 ? ch.toLowerCase() : ch.toUpperCase();
+        styleLetter(l, font, font.scale * (0.92 + r() * 0.16));
+        l.style.setProperty('--r', ((r() - 0.5) * 10).toFixed(1) + 'deg');
+        if (r() < 0.38) {
+          const bg = nextColor();
+          l.classList.add('tile');
+          l.style.background = bg;
+          l.style.color = inkFor(bg);
+        }
+        w.append(l);
+      }
+      wrap.append(w);
+    });
+    return wrap;
+  }
+
+  // Fill a button with magazine letters (screen readers still get the plain text)
+  function magButton(btn, text, seed) {
+    btn.setAttribute('aria-label', text);
+    btn.classList.add('mag-btn');
+    btn.replaceChildren(mag(text, seed));
+    return btn;
+  }
+
+  /* Redraw every heading and button label in the new palette */
+  function refresh(root = document) {
+    root.querySelectorAll('[data-ransom]').forEach(el => {
+      const [text, size, seed, opts] = JSON.parse(el.dataset.ransom);
+      el.replaceWith(ransom(text, size, seed ?? undefined, opts));
+    });
+    root.querySelectorAll('[data-mag]').forEach(el => {
+      const [text, seed] = JSON.parse(el.dataset.mag);
+      el.replaceWith(mag(text, seed ?? undefined));
+    });
   }
 
   /* ---------- sticker(text, tilt, shape) ----------
@@ -170,6 +271,9 @@
     return el;
   }
 
-  W.type = { ransom, sticker, human, label, rng, inkFor };
+  W.type = {
+    ransom, mag, magButton, sticker, human, label, refresh,
+    rng, inkFor, PALETTES, palette, setPalette,
+  };
   window.ransom = ransom; // the reusable ransom(text, size, seed)
 })();
