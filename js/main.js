@@ -83,10 +83,14 @@
   W.current = () => current;
 
   // Countdown in the Paint title bar. W.setTimer(7.2) shows 0:08. null hides it.
+  // It also ticks once per second in the last 3 seconds.
+  let lastTick = null;
   W.setTimer = function (seconds) {
     const t = $('#title-timer');
-    if (seconds == null) { t.hidden = true; t.classList.remove('urgent'); return; }
+    if (seconds == null) { t.hidden = true; t.classList.remove('urgent'); lastTick = null; return; }
     const s = Math.max(0, Math.ceil(seconds));
+    if (s >= 1 && s <= 3 && s !== lastTick) W.sound.play('tick');
+    lastTick = s;
     t.hidden = false;
     t.textContent = `0:${String(s).padStart(2, '0')}`;
     t.classList.toggle('urgent', s <= 3);
@@ -186,15 +190,16 @@
   };
 
   /* ---------- PLACEHOLDERS (replaced in later steps) ---------- */
-  function placeholder({ tag, tilt = -4, title, quip, box, button, onNext }) {
+  function placeholder({ tag, tilt = -4, title, quip, box, button, onNext, enterSound, sfx }) {
     return {
       enter(el) {
+        if (enterSound) W.sound.play(enterSound);
         el.append(h('div', { class: 'stack' },
           T.sticker(tag, tilt),
           T.ransom(title, 40, title),
           quip && T.human(quip),
           h('div', { class: 'placeholder' }, box()),
-          T.magButton(h('button', { class: 'big', onclick: onNext || (() => W.next()) }), button),
+          T.magButton(h('button', { class: 'big', 'data-sfx': sfx, onclick: onNext || (() => W.next()) }), button),
         ));
       },
     };
@@ -206,7 +211,7 @@
       box: () => T.label('24 × 24 canvas soon'), button: 'Done',
     }),
     card: placeholder({
-      tag: 'Your result', tilt: 3, title: 'Type card', quip: 'who are you, really?',
+      tag: 'Your result', tilt: 3, title: 'Type card', quip: 'who are you, really?', enterSound: 'levelup',
       box: () => [T.ransom('????', 64, 'code', { mixCase: false, align: 'center', level: 2 }), T.label('Type code')],
       button: 'Compare',
     }),
@@ -218,7 +223,7 @@
   W.CHALLENGES.forEach(c => {
     fallbacks['challenge' + c.id] = placeholder({
       tag: `Challenge ${c.id}/5 · ${c.time}s`, tilt: c.id % 2 ? -4 : 3,
-      title: c.name, quip: c.quip, box: () => T.label(c.hint), button: 'OK',
+      title: c.name, quip: c.quip, box: () => T.label(c.hint), button: 'OK', sfx: 'ding',
     });
   });
   for (const [name, scr] of Object.entries(fallbacks)) {
@@ -244,6 +249,25 @@
           h('div', { class: 'row end' }, ok))));
     document.body.append(modal);
     ok.focus();
+  }
+
+  /* ---------- SOUND TEST DIALOG ---------- */
+  function openSoundTest() {
+    if ($('.modal')) return;
+    W.sound.unlock();
+    const close = () => modal.remove();
+    const modal = h('div', { class: 'modal', onclick: e => { if (e.target === modal) close(); } },
+      h('div', { class: 'window dialog', role: 'dialog', 'aria-label': 'Sound test' },
+        h('div', { class: 'title-bar' },
+          h('div', { class: 'title-bar-text' }, 'Sound test'),
+          h('div', { class: 'title-bar-controls' },
+            h('button', { 'aria-label': 'Close', onclick: close }))),
+        h('div', { class: 'window-body about' },
+          T.human(W.sound.muted ? 'sound is muted.' : 'tap to hear.'),
+          h('div', { class: 'sound-grid' },
+            W.sound.names.map(n => h('button', { 'data-sfx': n }, n))),
+          h('div', { class: 'row end' }, h('button', { onclick: close }, 'OK')))));
+    document.body.append(modal);
   }
 
   /* ---------- COLORS WINDOW (palettes) ----------
@@ -326,6 +350,7 @@
       if (action === 'new') W.go('lobby');
       if (action === 'restart') W.go('boot');
       if (action === 'about') openAbout();
+      if (action === 'sounds') openSoundTest();
     });
 
     // Mute
@@ -360,9 +385,13 @@
     buildTaskbar();
 
     $('#menu-help').addEventListener('click', openAbout);
-    // Decorative Win95 buttons just bonk
-    document.querySelectorAll('[data-bonk]').forEach(b =>
-      b.addEventListener('click', () => W.sound.play('bonk')));
+    // Every button makes a sound: data-sfx picks it, decorative Win95 buttons bonk,
+    // everything else clicks. (The boot screen plays its own chime.)
+    document.addEventListener('click', e => {
+      const b = e.target.closest('button');
+      if (!b || b.disabled || b.closest('#boot')) return;
+      W.sound.play(b.dataset.sfx || (b.hasAttribute('data-bonk') ? 'bonk' : 'click'));
+    });
 
     // Audio may only start after a tap; every tap is a chance to unlock it
     document.addEventListener('pointerdown', () => W.sound.unlock());

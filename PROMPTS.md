@@ -1,7 +1,7 @@
 # Prompts to paste into Claude Code (in order)
 
 Run `claude` inside this repo folder. Paste one prompt, test it in the browser, then go to the next.
-To test locally: `python3 -m http.server 8000`, then open http://localhost:8000 (use your phone on the same wifi with your laptop's IP for phone testing).
+To test locally: `python3 serve.py`, then open http://localhost:8000 (use your phone on the same wifi with your laptop's IP for phone testing).
 
 ---
 

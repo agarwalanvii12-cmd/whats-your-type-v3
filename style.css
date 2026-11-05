@@ -465,6 +465,8 @@ input[type="text"] { height: 44px; padding: 4px 10px; font-size: 18px; }
 .dialog { width: min(320px, 100%); }
 .about { display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 16px; text-align: center; }
 .about .row { align-self: stretch; margin-top: 4px; }
+.sound-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; align-self: stretch; }
+.sound-grid button { min-height: 44px; }
 
 /* ---------- BOOT ---------- */
 .boot {
