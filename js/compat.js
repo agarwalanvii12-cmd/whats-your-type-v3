@@ -57,7 +57,8 @@
         T.sticker('Live room', -4),
         T.ransom('Almost', 40, 'almost'),
         T.human(`waiting for ${W.live.opp}'s card...`),
-        T.magButton(h('button', { onclick: () => { W.live.leave(); this.render(); } }), 'Compare by code', 'fallback')));
+        h('div', { class: 'actions' },
+          T.magButton(h('button', { onclick: () => { W.live.leave(); this.render(); } }), 'Compare by code', 'fallback'))));
     },
 
     /* nobody on this device has played yet */
@@ -67,7 +68,8 @@
         T.sticker('Compare', -4),
         T.ransom('Play first', 40, 'play first'),
         T.human('get your card, then swap codes.'),
-        T.magButton(h('button', { class: 'big', onclick: () => W.go('lobby') }), 'Play solo')));
+        h('div', { class: 'actions' },
+          T.magButton(h('button', { class: 'big', onclick: () => W.go('lobby') }), 'Play solo'))));
     },
 
     /* your code + QR, and a box for theirs */
@@ -129,10 +131,11 @@
           h('div', { class: 'title-bar' }, h('div', { class: 'title-bar-text' }, "Friend's code")),
           h('div', { class: 'window-body share-body col' }, input, error)),
 
-        compare,
-        h('div', { class: 'row' },
-          T.magButton(h('button', { onclick: () => W.rematchSolo() }), 'Rematch', 'rematch-solo'),
-          T.magButton(h('button', { onclick: () => { state.friend = null; W.go('lobby'); } }), 'Lobby', 'lobby'))));
+        h('div', { class: 'actions' },
+          compare,
+          h('div', { class: 'row' },
+            T.magButton(h('button', { onclick: () => W.rematchSolo() }), 'Rematch', 'rematch-solo'),
+            T.magButton(h('button', { onclick: () => { state.friend = null; W.go('lobby'); } }), 'Lobby', 'lobby')))));
     },
 
     /* the result */
@@ -172,7 +175,7 @@
             h('p', { class: 'axis-key' },
               h('i', { class: 'dot me' }), ` ${me.name}  `, h('i', { class: 'dot them' }), ` ${friend.name}`),
             rows)),
-        W.live.connected
+        h('div', { class: 'actions' }, W.live.connected
           ? [
               T.magButton(h('button', { class: 'big', onclick: () => W.live.rematch() }), 'Rematch', 'rematch'),
               T.magButton(h('button', { onclick: () => { W.live.leave(); state.friend = null; W.go('lobby'); } }), 'Leave room', 'leave'),
@@ -182,7 +185,7 @@
               h('div', { class: 'row' },
                 T.magButton(h('button', { onclick: () => W.rematchSolo() }), 'Rematch', 'rematch-solo'),
                 T.magButton(h('button', { onclick: () => { state.friend = null; W.go('lobby'); } }), 'Lobby', 'lobby')),
-            ]));
+            ])));
     },
 
     exit() { W.live.off(this.onLive); },

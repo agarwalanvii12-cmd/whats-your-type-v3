@@ -299,8 +299,7 @@
         T.human(type.line),
         box,
         isIOS() && T.label('Tip: long-press the card to save'),
-        h('div', { class: 'row' }, dl),
-        next));
+        h('div', { class: 'actions' }, h('div', { class: 'row' }, dl, next))));
 
       W.renderCard({ name, avatar, result }).then(card => {
         if (this.token !== token) return; // left the screen already

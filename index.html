@@ -44,7 +44,7 @@
     <!-- The one Paint window that hosts every screen -->
     <section id="paint" class="window paint" aria-label="Paint">
       <div class="title-bar">
-        <div class="title-bar-text"><img id="title-icon" class="title-icon" alt="">untitled - Paint</div>
+        <div class="title-bar-text"><img id="title-icon" class="title-icon" alt="">id2116 - Paint</div>
         <span id="title-timer" class="title-timer" hidden>0:00</span>
         <div class="title-bar-controls">
           <button aria-label="Minimize" data-bonk></button>
@@ -56,8 +56,8 @@
       <nav class="menubar" aria-label="Menu">
         <button data-bonk><u>F</u>ile</button>
         <button data-bonk><u>E</u>dit</button>
-        <button data-bonk><u>V</u>iew</button>
         <button id="menu-colors" aria-controls="palette-win" aria-expanded="false"><u>C</u>olors</button>
+        <button id="menu-fonts" aria-controls="fonts-win" aria-expanded="false">F<u>o</u>nts</button>
         <button id="menu-help"><u>H</u>elp</button>
       </nav>
 
@@ -72,19 +72,38 @@
       </div>
     </section>
 
-    <!-- Colour palettes: docked right of Paint on laptop, a pop-up on phone -->
-    <section id="palette-win" class="window palette-win" aria-label="Colors">
-      <div class="title-bar">
-        <div class="title-bar-text">Colors</div>
-        <div class="title-bar-controls">
-          <button id="palette-close" aria-label="Close"></button>
+    <!-- Tool windows: docked right of Paint on laptop (each can be minimised
+         to the taskbar), pop-ups from the menu bar on phone -->
+    <div class="side-dock">
+      <section id="palette-win" class="window tool-win" aria-label="Colors" data-win="colors">
+        <div class="title-bar">
+          <div class="title-bar-text">Colors</div>
+          <div class="title-bar-controls">
+            <button aria-label="Minimize" data-min></button>
+            <button aria-label="Close" data-close></button>
+          </div>
         </div>
-      </div>
-      <div class="window-body palette-body">
-        <p class="label">Pick a palette</p>
-        <div id="palette-list" class="palette-list" role="radiogroup" aria-label="Palettes"></div>
-      </div>
-    </section>
+        <div class="window-body tool-body">
+          <p class="label">Pick a palette</p>
+          <div id="palette-list" class="palette-list" role="radiogroup" aria-label="Palettes"></div>
+        </div>
+      </section>
+
+      <section id="fonts-win" class="window tool-win" aria-label="Fonts" data-win="fonts">
+        <div class="title-bar">
+          <div class="title-bar-text">Fonts</div>
+          <div class="title-bar-controls">
+            <button aria-label="Minimize" data-min></button>
+            <button aria-label="Close" data-close></button>
+          </div>
+        </div>
+        <div class="window-body tool-body">
+          <p class="label">Header fonts</p>
+          <div id="fontset-list" class="palette-list" role="radiogroup" aria-label="Font sets"></div>
+          <button id="shuffle-btn" class="big">Shuffle</button>
+        </div>
+      </section>
+    </div>
   </main>
 
   <!-- TASKBAR -->
@@ -92,7 +111,8 @@
     <button id="start-btn" class="start-btn" aria-haspopup="menu" aria-expanded="false">
       <img id="start-icon" alt="">Start
     </button>
-    <button class="task-btn pressed" tabindex="-1">untitled - Paint</button>
+    <button class="task-btn pressed" tabindex="-1">id2116 - Paint</button>
+    <div id="task-wins" class="task-wins"></div>
     <div class="tray">
       <button id="mute-btn" class="mute-btn" aria-label="Mute" aria-pressed="false"><img id="mute-icon" alt=""></button>
       <span id="clock" class="clock">12:00</span>

@@ -404,7 +404,7 @@
             h('div', { class: 'window-body chal-body' },
               T.label(c.hint),
               h('div', { class: 'chal-wrap' }, stage, count, ask, reveal))),
-          okBtn));
+          h('div', { class: 'actions' }, okBtn)));
 
         api = {
           stage, state, h, T, data: {},

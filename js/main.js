@@ -406,34 +406,85 @@
     document.body.append(modal);
   }
 
-  /* ---------- COLORS WINDOW (palettes) ----------
-     Laptop (wide): always docked to the right of Paint.
-     Phone / narrow: opens from the Colors menu as a pop-up. */
-  function setPaletteOpen(open) {
-    document.body.classList.toggle('palette-open', open);
-    $('#menu-colors').setAttribute('aria-expanded', String(open));
-  }
-  function buildPalettes() {
-    const list = $('#palette-list');
-    const render = () => {
-      list.replaceChildren(...T.PALETTES.map(p => {
-        const on = p.id === T.palette().id;
-        return h('button', {
-          class: 'pal-row' + (on ? ' on' : ''), role: 'radio', 'aria-checked': String(on),
-          onclick: () => { T.setPalette(p.id); render(); },
-        },
-          h('span', { class: 'pal-swatches' },
-            p.colors.map(c => h('span', { class: 'pal-swatch', style: `background:${c}` }))),
-          h('span', { class: 'pal-name' }, p.name),
-          h('span', { class: 'pal-note' }, p.note));
-      }));
-    };
-    render();
-    $('#menu-colors').addEventListener('click', e => {
-      e.stopPropagation();
-      setPaletteOpen(!document.body.classList.contains('palette-open'));
+  /* ---------- TOOL WINDOWS: Colors + Fonts ----------
+     Laptop (wide): docked to the right of Paint. Minimise sends a
+     window to the taskbar; tap its taskbar button (or the menu) to bring it back.
+     Phone / narrow: each opens from the menu bar as a pop-up. */
+  const WINS = {
+    colors: { el: '#palette-win', menu: '#menu-colors', label: 'Colors' },
+    fonts:  { el: '#fonts-win',   menu: '#menu-fonts',  label: 'Fonts' },
+  };
+  const wide = () => window.matchMedia('(min-width: 1100px)').matches;
+  let minimised = {};
+  try { minimised = JSON.parse(localStorage.getItem('wyt-min') || '{}'); } catch (e) { /* ignore */ }
+
+  function closePopups() {
+    Object.keys(WINS).forEach(id => {
+      document.body.classList.remove('open-' + id);
+      $(WINS[id].menu).setAttribute('aria-expanded', 'false');
     });
-    $('#palette-close').addEventListener('click', () => setPaletteOpen(false));
+  }
+  function renderTaskWins() {
+    $('#task-wins').replaceChildren(...Object.keys(WINS).filter(id => minimised[id]).map(id =>
+      h('button', { class: 'task-btn', onclick: () => restoreWin(id) }, WINS[id].label)));
+    Object.keys(WINS).forEach(id => $(WINS[id].el).classList.toggle('minimised', !!minimised[id]));
+  }
+  function saveMin() { try { localStorage.setItem('wyt-min', JSON.stringify(minimised)); } catch (e) { /* ignore */ } }
+  function minimiseWin(id) { minimised[id] = true; saveMin(); closePopups(); renderTaskWins(); }
+  function restoreWin(id) {
+    minimised[id] = false; saveMin(); renderTaskWins();
+    if (!wide()) { closePopups(); document.body.classList.add('open-' + id); $(WINS[id].menu).setAttribute('aria-expanded', 'true'); }
+  }
+
+  function buildToolWindows() {
+    // palettes
+    const pal = $('#palette-list');
+    const renderPalettes = () => pal.replaceChildren(...T.PALETTES.map(p => {
+      const on = p.id === T.palette().id;
+      return h('button', {
+        class: 'pal-row' + (on ? ' on' : ''), role: 'radio', 'aria-checked': String(on),
+        onclick: () => { T.setPalette(p.id); renderPalettes(); renderSets(); },
+      },
+        h('span', { class: 'pal-swatches' }, p.colors.map(c => h('span', { class: 'pal-swatch', style: `background:${c}` }))),
+        h('span', { class: 'pal-name' }, p.name),
+        h('span', { class: 'pal-note' }, p.note));
+    }));
+
+    // font sets: each row shows a few sample letters in its fonts
+    const sets = $('#fontset-list');
+    const renderSets = () => sets.replaceChildren(...T.FONT_SETS.map(fs => {
+      const on = fs.id === T.fontSet().id;
+      const sample = fs.fonts.slice(0, 6).map((f, i) => h('span', {
+        class: 'set-letter',
+        style: `font-family:${f.family};font-weight:${f.weight};font-style:${f.style};font-size:${(f.scale * 22).toFixed(0)}px`,
+      }, 'Aa'[i % 2]));
+      return h('button', {
+        class: 'pal-row' + (on ? ' on' : ''), role: 'radio', 'aria-checked': String(on),
+        onclick: () => { T.setFontSet(fs.id); renderSets(); },
+      },
+        h('span', { class: 'set-sample' }, sample),
+        h('span', { class: 'pal-name' }, fs.name),
+        h('span', { class: 'pal-note' }, fs.note));
+    }));
+    renderPalettes();
+    renderSets();
+    T.magButton($('#shuffle-btn'), 'Shuffle', 'shuffle');
+    $('#shuffle-btn').addEventListener('click', () => T.shuffle());
+
+    // window buttons + menu items
+    Object.entries(WINS).forEach(([id, w]) => {
+      const el = $(w.el);
+      el.querySelector('[data-min]').addEventListener('click', () => minimiseWin(id));
+      el.querySelector('[data-close]').addEventListener('click', closePopups);
+      $(w.menu).addEventListener('click', e => {
+        e.stopPropagation();
+        if (wide()) { restoreWin(id); return; }
+        const open = !document.body.classList.contains('open-' + id);
+        closePopups();
+        if (open) restoreWin(id);
+      });
+    });
+    renderTaskWins();
   }
 
   /* ---------- DESKTOP ICONS ---------- */
@@ -517,7 +568,7 @@
     W.wallpaper.init();
     W.fx.init();
     T.magButton($('#boot-tap'), 'Tap to start', 'boot-tap');
-    buildPalettes();
+    buildToolWindows();
     buildIcons();
     buildTaskbar();
 
@@ -532,7 +583,7 @@
 
     // Audio may only start after a tap; every tap is a chance to unlock it
     document.addEventListener('pointerdown', () => W.sound.unlock());
-    document.addEventListener('keydown', e => { if (e.key === 'Escape') { closeStartMenu(); setPaletteOpen(false); $('.modal')?.remove(); } });
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') { closeStartMenu(); closePopups(); $('.modal')?.remove(); } });
 
     // Dev shortcut: #draw, #challenge3, #card ...
     // Opened from a room QR (#r=ABCD)? Go to the lobby with Join ready.

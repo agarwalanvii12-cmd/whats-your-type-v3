@@ -18,7 +18,7 @@
   const W = (window.WYT = window.WYT || {});
 
   const SIZE = 24;          // pixels per side
-  const SECONDS = 15;       // drawing time
+  const SECONDS = 25;       // drawing time
   const COUNT_IN = 3;       // 3-2-1 before the clock starts
 
   // The classic 28-colour Paint palette (top row, then bottom row)
@@ -224,7 +224,7 @@
         T.human('you are the mascot.'),
         h('div', { class: 'draw-area' }, tools, holder),
         h('div', { class: 'palette-bar' }, current, grid),
-        doneBtn,
+        h('div', { class: 'actions' }, doneBtn),
       ));
 
       /* ----- p5 sketch: draws the grid ----- */

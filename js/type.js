@@ -58,6 +58,46 @@
                '#ffffff', '#c0c0c0', '#ff0000', '#ffff00', '#00ff00', '#00ffff', '#0000ff', '#ff00ff'] },
   ];
 
+  /* ---------- FONT SETS (pick one in the Fonts window) ----------
+     Which fonts the ransom headings and buttons cut letters from.
+     Shuffle changes the "salt" so every heading re-rolls. */
+  const by = (family, style = 'normal') => FONTS.filter(f => f.family.includes(family) && (style === 'any' || f.style === style));
+  const FONT_SETS = [
+    { id: 'mix',    name: 'Mix it up',  note: 'everything at once', fonts: FONTS },
+    { id: 'serif',  name: 'Serifs',     note: 'bookish and dramatic',
+      fonts: [...by('Playfair', 'any'), ...by('DM Serif', 'any'), ...by('Fraunces', 'any')] },
+    { id: 'sans',   name: 'Sans',       note: 'clean and punchy',
+      fonts: [...by('Bagel'), ...by('Archivo'), ...by('Bebas'), ...by('Oswald'), ...by('Work Sans'), ...by('Unbounded')] },
+    { id: 'retro',  name: 'Retro',      note: 'arcade and terminal',
+      fonts: [...by('Press Start'), ...by('Bungee'), ...by('Rubik Mono'), ...by('Space Mono', 'any'), ...by('Bebas')] },
+    { id: 'chunky', name: 'Chunky',     note: 'heavy everything',
+      fonts: [...by('Bagel'), ...by('Bungee'), ...by('Rubik Mono'), ...by('Archivo'),
+              ...FONTS.filter(f => f.weight >= 900)] },
+    { id: 'light',  name: 'Light',      note: 'airy and elegant',
+      fonts: FONTS.filter(f => f.weight <= 300 || f.style === 'italic') },
+  ];
+
+  let fontSetId = 'mix', salt = 0;
+  try {
+    fontSetId = localStorage.getItem('wyt-fontset') || 'mix';
+    salt = Number(localStorage.getItem('wyt-salt')) || 0;
+  } catch (e) { /* private mode */ }
+  if (!FONT_SETS.some(f => f.id === fontSetId)) fontSetId = 'mix';
+  const fontSet = () => FONT_SETS.find(f => f.id === fontSetId);
+  const salted = seed => (salt ? `${seed}~${salt}` : seed);
+
+  function setFontSet(id) {
+    if (!FONT_SETS.some(f => f.id === id)) return;
+    fontSetId = id;
+    try { localStorage.setItem('wyt-fontset', id); } catch (e) { /* ignore */ }
+    refresh();
+  }
+  function shuffle() {
+    salt = (salt + 1 + Math.floor(Math.random() * 97)) % 10007;
+    try { localStorage.setItem('wyt-salt', String(salt)); } catch (e) { /* ignore */ }
+    refresh();
+  }
+
   let paletteId = 'pop';
   try { paletteId = localStorage.getItem('wyt-palette') || 'pop'; } catch (e) { /* private mode */ }
   if (!PALETTES.some(p => p.id === paletteId)) paletteId = 'pop';
@@ -121,9 +161,10 @@
   }
   function fontPicker(r) {
     let last = null;
+    const list = fontSet().fonts;
     return function () {
       let f;
-      do { f = pick(r, FONTS); } while (f.family === last);
+      do { f = pick(r, list); } while (f.family === last);
       last = f.family;
       return f;
     };
@@ -140,7 +181,7 @@
      { glyph, font, bg, ink, em, rot (deg), dy (em), outlined }.
      ransom() turns it into HTML; the Type Card draws it on a canvas. */
   function tiles(text, seed, opts = {}) {
-    const r = rng(seed == null ? text : seed);
+    const r = rng(salted(seed == null ? text : seed));
     const nextColor = colorPicker(r, palette().colors);
     const nextFont = fontPicker(r);
     const mixCase = opts.mixCase !== false;
@@ -209,7 +250,7 @@
      font, about a third of them on a little coloured tile.
      Put it inside a button; the button keeps the plain text as its label. */
   function mag(text, seed) {
-    const r = rng(seed == null ? 'mag' + text : seed);
+    const r = rng(salted(seed == null ? 'mag' + text : seed));
     const nextColor = colorPicker(r, palette().colors);
     const nextFont = fontPicker(r);
 
@@ -288,6 +329,7 @@
   W.type = {
     ransom, tiles, mag, magButton, sticker, human, label, refresh,
     rng, inkFor, PALETTES, palette, setPalette,
+    FONT_SETS, fontSet, setFontSet, shuffle,
   };
   window.ransom = ransom; // the reusable ransom(text, size, seed)
 })();
