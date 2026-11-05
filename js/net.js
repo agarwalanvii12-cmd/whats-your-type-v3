@@ -6,10 +6,9 @@
    text code (and a QR of a link with that code in it).
 
    What's inside, byte by byte:
-     1  version (1)
-     1  Type Code: 4 bits, one per axis (0 = first letter)
+     1  version (2)
      1+ name: length, then UTF-8 bytes (max 12 characters)
-     3  6 stats, 4 bits each (0..15)
+     3  your 5 traits, 4 bits each (0..15), last 4 bits unused
      …  avatar, run-length packed: each byte = 3 bits "how many
         in a row" (1..8) + 5 bits "which colour" (0 = empty)
      1  checksum, so a broken paste is caught
@@ -19,7 +18,7 @@
   'use strict';
   const W = (window.WYT = window.WYT || {});
   const CELLS = 24 * 24;
-  const VERSION = 1;
+  const VERSION = 2;
 
   const clamp01 = v => Math.max(0, Math.min(1, v || 0));
 
@@ -34,18 +33,14 @@
     return Array.from(bin, c => c.charCodeAt(0));
   }
 
-  /* card: { name, code, avatar, stats: [{label, value}] } → "AQ..." */
+  /* card: { name, traits: [5 numbers 0..1], avatar } → "Ag..." */
   function encode(card) {
     const bytes = [VERSION];
-
-    let bits = 0;
-    [...card.code].forEach((ch, i) => { if (ch === W.AXES[i].letters[1]) bits |= 1 << i; });
-    bytes.push(bits);
 
     const name = new TextEncoder().encode([...(card.name || 'Anon')].slice(0, 12).join(''));
     bytes.push(name.length, ...name);
 
-    const q = (card.stats || []).map(s => Math.round(clamp01(s.value) * 15));
+    const q = (card.traits || []).map(v => Math.round(clamp01(v) * 15));
     while (q.length < 6) q.push(0);
     bytes.push((q[0] << 4) | q[1], (q[2] << 4) | q[3], (q[4] << 4) | q[5]);
 
@@ -77,8 +72,6 @@
 
       let p = 0;
       if (b[p++] !== VERSION) return null;
-      const bits = b[p++];
-      const code = W.AXES.map((axis, i) => axis.letters[(bits >> i) & 1]).join('');
 
       const len = b[p++];
       if (len > 48) return null;
@@ -87,8 +80,7 @@
 
       const q = [];
       for (let k = 0; k < 3; k++) { q.push(b[p] >> 4, b[p] & 15); p++; }
-      const labels = W.cardStats({}, {}).map(s => s.label);
-      const stats = labels.map((label, i) => ({ label, value: q[i] / 15 }));
+      const traits = q.slice(0, 5).map(n => n / 15);
 
       const avatar = [];
       while (avatar.length < CELLS && p < b.length) {
@@ -99,7 +91,7 @@
       }
       if (avatar.length !== CELLS || p !== b.length) return null;
 
-      return { name: name || 'Anon', code, avatar, stats, share: str };
+      return { name: name || 'Anon', traits, avatar, share: str };
     } catch (e) {
       return null;
     }
@@ -381,9 +373,9 @@
       if (theirs !== undefined && u.reveal && !u.reveal.querySelector('.opp-answer')) {
         const id = Number(String(r).replace('challenge', ''));
         const c = W.CHALLENGES[id - 1];
-        if (c) {
-          const rv = c.reveal(theirs);
-          u.reveal.append(Object.assign(T.sticker(`${this.opp}: ${rv.big} · ${rv.word}`, 3), { className: 'sticker pill opp-answer' }));
+        if (c && Number.isFinite(theirs.trait)) {
+          const word = W.traitWord(c.trait, theirs.trait);
+          u.reveal.append(Object.assign(T.sticker(`${this.opp}: ${word}`, 3), { className: 'sticker pill opp-answer' }));
         }
       }
 

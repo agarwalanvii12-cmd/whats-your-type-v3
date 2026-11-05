@@ -3,8 +3,8 @@
 
    No friend yet → SHARE: your code + QR + Copy, and a box
    to paste a friend's code (or their link).
-   Friend loaded → MATCH: both mini cards side by side, % match,
-   verdict line, the font pair, and the per-axis breakdown.
+   Friend loaded → MATCH: % match, verdict line, your two fonts
+   as a pair, both mini cards, and trait by trait: why.
 
    Uses only the share codes (js/net.js), so it works offline.
    ========================================================= */
@@ -13,16 +13,15 @@
   const W = (window.WYT = window.WYT || {});
 
   /* A small Win95 card for one player */
-  function miniCard(p, seed) {
+  function miniCard(p) {
     const h = W.h, T = W.type;
-    const type = W.TYPES[p.code];
+    const type = W.resultFor(p.traits).type;
     const av = W.avatarCanvas(p.avatar, 4);
     av.className = 'mini-avatar';
     return h('div', { class: 'window mini-card' },
       h('div', { class: 'title-bar' }, h('div', { class: 'title-bar-text' }, p.name)),
       h('div', { class: 'window-body mini-body' },
         av,
-        T.ransom(p.code, 26, seed + p.code, { mixCase: false, level: 3 }),
         h('p', { class: 'human mini-type' }, type.name),
         h('p', { class: 'mini-specimen', style: `font-family:"${type.font}";font-weight:${type.weight}` }, p.name),
         T.label(type.font)));
@@ -139,19 +138,23 @@
     /* the result */
     renderMatch(me, friend) {
       const h = W.h, T = W.type, state = this.state;
-      const m = W.compatibility(me.code, friend.code);
-      const tA = W.TYPES[me.code], tB = W.TYPES[friend.code];
+      const m = W.compatibility(me.traits, friend.traits);
+      const tA = W.resultFor(me.traits).type, tB = W.resultFor(friend.traits).type;
       W.sound.play(m.score >= 85 ? 'levelup' : 'ding');
       if (m.score >= 85) setTimeout(() => W.fx.burst(this.el.querySelector('.compat-stack .ransom')), 200);
 
-      const rows = W.AXES.map((axis, i) => {
-        const same = me.code[i] === friend.code[i];
-        return h('div', { class: 'axis-row' },
-          h('span', { class: 'axis-name' }, axis.name),
-          h('span', { class: 'axis-letters' }, `${me.code[i]} · ${friend.code[i]}`),
-          h('span', { class: 'axis-same' }, same ? 'same' : 'different'),
-          h('span', { class: 'axis-pts' }, '+' + m.parts[i]));
-      });
+      // trait by trait: both of you on one scale, and the points it earned
+      const rows = W.TRAITS.map((t, i) => h('div', { class: 'axis-row' },
+        h('div', { class: 'axis-top' },
+          h('span', { class: 'axis-name' }, t.name),
+          h('span', { class: 'axis-same' }, `best ${m.best[i]}`),
+          h('span', { class: 'axis-pts' }, `${m.parts[i]}/${m.max[i]}`)),
+        h('div', { class: 'axis-scale' },
+          h('span', {}, t.low),
+          h('span', { class: 'axis-track' },
+            h('i', { class: 'dot me', style: `left:${me.traits[i] * 100}%`, title: me.name }),
+            h('i', { class: 'dot them', style: `left:${friend.traits[i] * 100}%`, title: friend.name })),
+          h('span', {}, t.high))));
 
       this.el.append(h('div', { class: 'stack compat-stack' },
         T.sticker(`${me.name} × ${friend.name}`, -3),
@@ -162,10 +165,13 @@
           h('span', { class: 'pair-x' }, ' × '),
           h('span', { style: `font-family:"${tB.font}";font-weight:${tB.weight}` }, tB.font)),
         me.share === friend.share && T.sticker("That's you!", 4),
-        h('div', { class: 'mini-pair' }, miniCard(me, 'me'), miniCard(friend, 'them')),
+        h('div', { class: 'mini-pair' }, miniCard(me), miniCard(friend)),
         h('div', { class: 'window axis-win' },
           h('div', { class: 'title-bar' }, h('div', { class: 'title-bar-text' }, 'Why')),
-          h('div', { class: 'window-body axis-body' }, rows)),
+          h('div', { class: 'window-body axis-body' },
+            h('p', { class: 'axis-key' },
+              h('i', { class: 'dot me' }), ` ${me.name}  `, h('i', { class: 'dot them' }), ` ${friend.name}`),
+            rows)),
         W.live.connected
           ? [
               T.magButton(h('button', { class: 'big', onclick: () => W.live.rematch() }), 'Rematch', 'rematch'),

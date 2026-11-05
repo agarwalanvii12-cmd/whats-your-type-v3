@@ -2,9 +2,9 @@
    card.js · the Type Card
 
    Drawn in a p5 graphics buffer as a Win95 "Properties"
-   window: pixel self-portrait, name, ransom-letter Type Code,
-   type name, your name set in your font, and stat bars.
-   Saved as a 1200×1700 PNG (drawn at 2× for crisp printing).
+   window: pixel self-portrait, your type, your name set in your
+   font, your 5 traits, your top 3 fonts, and the font you pair
+   best with. Saved as a 1200×1840 PNG (2× for crisp printing).
 
    WYT.renderCard(data) → Promise<{ dataURL, blob, url }>
    ========================================================= */
@@ -12,7 +12,7 @@
   'use strict';
   const W = (window.WYT = window.WYT || {});
 
-  const CW = 600, CH = 850; // card size in points (PNG is 2× this)
+  const CW = 600, CH = 920; // card size in points (PNG is 2× this)
   const COL = {
     grey: '#c0c0c0', dark: '#808080', black: '#0a0a0a', light: '#dfdfdf',
     white: '#ffffff', navy: '#000080', ink: '#111111', pink: '#f4c6d7',
@@ -95,6 +95,7 @@
   /* ---------- the card ---------- */
   function drawCard(g, d) {
     const ctx = g.drawingContext;
+    const { type, top3, pair, traits } = d.result;
     g.background(COL.pink);
 
     // window
@@ -112,7 +113,7 @@
     // tabs + panel
     const tabY = y + 50, panelY = tabY + 30;
     const px = x + 12, pw = w - 24, ph = h - (panelY - y) - 60;
-    [['Fonts', 116], ['Stats', 204]].forEach(([s, tx]) => {
+    [['Fonts', 116], ['Traits', 204]].forEach(([s, tx]) => {
       raised(g, px + tx, tabY + 4, 86, 28);
       text(ctx, s, px + tx + 43, tabY + 24, '700 13px Silkscreen', COL.ink, 'center');
     });
@@ -122,10 +123,10 @@
     text(ctx, 'General', px + 56, tabY + 21, '700 13px Silkscreen', COL.ink, 'center');
 
     const ix = px + 20, iw = pw - 40;   // inner content area
-    let cy = panelY + 22;
+    let cy = panelY + 20;
 
     // avatar
-    const scale = 7, av = 24 * scale;
+    const scale = 6, av = 24 * scale;
     sunken(g, ix, cy, av + 8, av + 8);
     g.noStroke();
     (d.avatar || []).forEach((c, i) => {
@@ -134,67 +135,74 @@
       g.rect(ix + 4 + (i % 24) * scale, cy + 4 + Math.floor(i / 24) * scale, scale, scale);
     });
 
-    // code + type name, right of the avatar
-    const rx = ix + av + 28, rw = iw - (av + 28);
-    label(ctx, 'Type code', rx, cy + 14);
-    drawTiles(ctx, W.type.tiles(d.code, 'code' + d.code, { mixCase: false })[0], rx + 2, cy + 30, 52);
-    ctx.font = 'italic 32px "Instrument Serif"';
-    const nameLines = wrapLines(ctx, d.type.name, rw);
-    nameLines.slice(0, 2).forEach((line, i) =>
-      text(ctx, line, rx, cy + 134 + i * 32, 'italic 32px "Instrument Serif"', COL.ink));
+    // your type, right of the avatar
+    const rx = ix + av + 26, rw = iw - (av + 26);
+    label(ctx, 'Your type', rx, cy + 14);
+    ctx.font = 'italic 34px "Instrument Serif"';
+    const nameLines = wrapLines(ctx, type.name, rw).slice(0, 2);
+    nameLines.forEach((line, i) => text(ctx, line, rx, cy + 52 + i * 34, 'italic 34px "Instrument Serif"', COL.ink));
+    ctx.font = '400 12px "Space Mono"';
+    wrapLines(ctx, type.line, rw).slice(0, 2).forEach((line, i) =>
+      text(ctx, line, rx, cy + 66 + nameLines.length * 34 + i * 17, '400 12px "Space Mono"', '#333333'));
 
     cy += av + 26;
     etched(g, ix, cy, iw);
 
-    // your name in your font
+    // your name in your #1 font
     cy += 24;
     label(ctx, 'Your font', ix, cy);
-    const fontCss = size => `${d.type.weight} ${size}px "${d.type.font}"`;
-    let size = 76;
-    ctx.font = fontCss(size);
-    while (size > 22 && ctx.measureText(d.name).width > iw) { size -= 2; ctx.font = fontCss(size); }
-    text(ctx, d.name, ix, cy + 22 + size * 0.85, fontCss(size), COL.ink);
-    cy += 34 + size;
-    text(ctx, `${d.type.font} · ${d.type.weight}`.toUpperCase(), ix, cy, '400 12px "Space Mono"', '#333333', 'left', 2);
+    const fontCss = (f, size) => `${f.weight} ${size}px "${f.font}"`;
+    let size = 64;
+    ctx.font = fontCss(type, size);
+    while (size > 22 && ctx.measureText(d.name).width > iw) { size -= 2; ctx.font = fontCss(type, size); }
+    text(ctx, d.name, ix, cy + 18 + size * 0.85, fontCss(type, size), COL.ink);
+    cy += 30 + size;
+    text(ctx, `${type.font} · ${type.match}% match`.toUpperCase(), ix, cy, '400 12px "Space Mono"', '#333333', 'left', 2);
 
-    cy += 18;
+    cy += 16;
     etched(g, ix, cy, iw);
 
-    // stat bars
-    cy += 26;
-    label(ctx, 'Stats', ix, cy);
-    cy += 14;
-    const trackX = ix + 190, trackW = iw - 190, seg = 12, gap = 2;
-    d.stats.forEach(s => {
-      text(ctx, s.label.toUpperCase(), ix, cy + 17, '700 12px "Space Mono"', COL.ink, 'left', 1);
-      sunken(g, trackX, cy, trackW, 24);
-      const n = Math.round(s.value * Math.floor((trackW - 6) / (seg + gap)));
-      g.fill(COL.navy);
-      for (let k = 0; k < n; k++) g.rect(trackX + 4 + k * (seg + gap), cy + 4, seg, 16);
-      cy += 34;
+    // your 5 traits: a scale between two ends, with a marker
+    cy += 24;
+    label(ctx, 'Your 5 traits', ix, cy);
+    cy += 12;
+    const endW = 118, trackX = ix + endW + 8, trackW = iw - 2 * (endW + 8);
+    W.TRAITS.forEach((t, i) => {
+      const v = traits[i], high = v >= 0.5;
+      text(ctx, t.low.toUpperCase(), ix, cy + 17, `${high ? 400 : 700} 11px "Space Mono"`, high ? '#555555' : COL.ink, 'left', 1);
+      text(ctx, t.high.toUpperCase(), ix + iw, cy + 17, `${high ? 700 : 400} 11px "Space Mono"`, high ? COL.ink : '#555555', 'right', 1);
+      sunken(g, trackX, cy + 4, trackW, 18);
+      g.fill(COL.light); g.rect(trackX + trackW / 2 - 1, cy + 6, 2, 14); // middle line
+      const mx = trackX + 3 + v * (trackW - 20);
+      g.fill(COL.navy); g.rect(mx, cy + 6, 14, 14);
+      cy += 30;
     });
 
-    // the 4 letters spelled out, as tilted sticker tags
-    cy += 8;
-    let tx = ix;
-    d.code.split('').forEach((letter, i) => {
-      const axis = W.AXES[i];
-      const word = axis.words[axis.letters.indexOf(letter)].toUpperCase();
-      ctx.save();
-      ctx.font = '700 12px "Space Mono"';
-      if ('letterSpacing' in ctx) ctx.letterSpacing = '2px';
-      const tw = ctx.measureText(word).width + 26, th = 28;
-      ctx.translate(tx + tw / 2, cy + th / 2);
-      ctx.rotate(([-3, 2, -2, 3][i] * Math.PI) / 180);
-      ctx.fillStyle = COL.ink;
-      ctx.beginPath(); ctx.roundRect(-tw / 2 + 2, -th / 2 + 2, tw, th, th / 2); ctx.fill();   // hard shadow
-      ctx.fillStyle = COL.white; ctx.strokeStyle = COL.ink; ctx.lineWidth = 2;
-      ctx.beginPath(); ctx.roundRect(-tw / 2, -th / 2, tw, th, th / 2); ctx.fill(); ctx.stroke();
-      ctx.fillStyle = COL.ink; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-      ctx.fillText(word, 1, 1);
-      ctx.restore();
-      tx += tw + 10;
+    cy += 4;
+    etched(g, ix, cy, iw);
+
+    // top 3 fonts, each set in itself
+    cy += 24;
+    label(ctx, 'Your 3 fonts', ix, cy);
+    cy += 10;
+    top3.forEach((f, i) => {
+      const fs = 26;
+      text(ctx, `${i + 1}`, ix, cy + 28, '700 13px "Space Mono"', '#555555');
+      let s2 = fs; ctx.font = fontCss(f, s2);
+      while (s2 > 14 && ctx.measureText(f.font).width > iw - 110) { s2 -= 1; ctx.font = fontCss(f, s2); }
+      text(ctx, f.font, ix + 24, cy + 30, fontCss(f, s2), COL.ink);
+      text(ctx, `${f.match}%`, ix + iw, cy + 28, '700 13px "Space Mono"', COL.ink, 'right');
+      cy += 40;
     });
+
+    // most compatible font
+    cy += 4;
+    sunken(g, ix, cy, iw, 58, '#ffffff');
+    label(ctx, 'Pairs best with', ix + 12, cy + 20);
+    let s3 = 24; ctx.font = fontCss(pair, s3);
+    while (s3 > 14 && ctx.measureText(pair.font).width > iw / 2) { s3 -= 1; ctx.font = fontCss(pair, s3); }
+    text(ctx, pair.font, ix + 12, cy + 48, fontCss(pair, s3), COL.ink);
+    text(ctx, pair.name, ix + iw - 12, cy + 47, 'italic 20px "Instrument Serif"', '#333333', 'right');
 
     // footer: OK / Cancel / Apply, like every Win95 dialog
     const by = y + h - 44;
@@ -206,18 +214,18 @@
 
   /* ---------- fonts must be loaded before drawing on a canvas ---------- */
   function loadFonts(d) {
+    const { top3, pair } = d.result;
     const specs = [
       '700 16px Silkscreen', '400 11px Silkscreen', '700 12px "Space Mono"', '400 12px "Space Mono"',
-      'italic 32px "Instrument Serif"', `${d.type.weight} 40px "${d.type.font}"`,
-      ...W.type.tiles(d.code, 'code' + d.code, { mixCase: false })[0]
-        .map(t => `${t.font.style} ${t.font.weight} 40px ${t.font.family}`),
+      'italic 32px "Instrument Serif"',
+      ...[...top3, pair].map(f => `${f.weight} 40px "${f.font}"`),
     ];
     const all = Promise.all(specs.map(s => document.fonts.load(s).catch(() => null)));
     const timeout = new Promise(r => setTimeout(r, 3000)); // offline: draw with what we have
     return Promise.race([all, timeout]);
   }
 
-  /* data: { name, code, type, avatar, stats } */
+  /* data: { name, avatar, result: WYT.resultFor(traits) } */
   W.renderCard = async function (d) {
     await loadFonts(d);
     const canvas = await new Promise(resolve => {
@@ -259,20 +267,22 @@
     a.remove();
   };
 
+  const shortName = t => t.name.replace(/^The /, '');
+
   /* ---------- the screen ---------- */
   W.screens = W.screens || {};
   W.screens.card = {
     enter(el, state) {
       const h = W.h, T = W.type;
-      const code = W.computeCode(state.results);
-      const type = W.TYPES[code];
-      const stats = W.cardStats(state.results, state.drawStats || {});
+      const traits = W.traitsFrom(state.results);
+      const result = W.resultFor(traits);
+      const type = result.type;
       const avatar = state.avatar || W.DEFAULT_FACES[0];
       const name = state.name || 'Anon';
       const token = (this.token = {});
 
       // the share code for Compare (saved on this device, so it survives a reload)
-      state.share = W.net.encode({ name, code, avatar, stats });
+      state.share = W.net.encode({ name, traits, avatar });
       W.net.saveMine(state.share);
       if (W.live.active) W.live.send({ type: 'card', share: state.share });
 
@@ -280,28 +290,31 @@
       const dl = T.magButton(h('button', { disabled: true }), 'Download PNG', 'dl');
       const next = T.magButton(h('button', { class: 'big', onclick: () => W.next() }), 'Compare', 'compare');
 
-      const codeEl = T.ransom(code, 64, 'code' + code, { mixCase: false });
-      codeEl.classList.add('waiting');
+      const title = T.ransom(shortName(type), 48, 'type' + type.font);
+      title.classList.add('waiting');
 
       el.append(h('div', { class: 'stack card-stack' },
-        T.sticker('Your type', -4),
-        codeEl,
-        T.human(`you are ${type.name.replace(/^The /, 'the ')}.`),
+        T.sticker('You are', -4),
+        title,
+        T.human(type.line),
         box,
         isIOS() && T.label('Tip: long-press the card to save'),
         h('div', { class: 'row' }, dl),
         next));
 
-      W.renderCard({ name, code, type, avatar, stats }).then(card => {
+      W.renderCard({ name, avatar, result }).then(card => {
         if (this.token !== token) return; // left the screen already
-        box.replaceChildren(h('img', { class: 'card-img', src: card.dataURL, alt: `Type Card: ${name}, ${code}, ${type.name}` }));
-        // level up: the code drops in letter by letter, confetti, jingle
-        codeEl.classList.remove('waiting');
-        codeEl.classList.add('drop');
+        box.replaceChildren(h('img', {
+          class: 'card-img', src: card.dataURL,
+          alt: `Type Card: ${name} is ${type.name}. Fonts: ${result.top3.map(f => f.font).join(', ')}.`,
+        }));
+        // level up: the type name drops in letter by letter, confetti, jingle
+        title.classList.remove('waiting');
+        title.classList.add('drop');
         W.sound.play('levelup');
-        setTimeout(() => W.fx.burst(codeEl), 350);
-        state.card = { code, typeName: type.name, font: type.font, stats, dataURL: card.dataURL };
-        const file = `whats-your-type-${code}-${name.replace(/[^a-z0-9]+/gi, '-')}.png`;
+        setTimeout(() => W.fx.burst(title), 350);
+        state.card = { name, traits, result, dataURL: card.dataURL };
+        const file = `whats-your-type-${shortName(type).replace(/\s+/g, '-')}-${name.replace(/[^a-z0-9]+/gi, '-')}.png`;
         dl.disabled = false;
         dl.addEventListener('click', () => W.downloadCard(card, file));
       });

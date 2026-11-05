@@ -4,13 +4,17 @@
    Each challenge is an object:
      setup(stage, api)  build its UI inside the dialog
      draw(api)          (optional) runs every frame while playing
-     score(api)         read the current state, return a result
-     reveal(result)     { big, word, line } shown after the round
+     score(api)         read the current state, return a result with
+                        part: 0..1 toward the trait's high end
      teardown(api)      (optional) clean up listeners
+
+   After the timed part, 2 quick personality questions (untimed).
+   Trait = half the challenge + a quarter per question.
 
    One shared runner (below) handles the rest: the Win95 dialog,
    the 3-2-1 count-in, the countdown bar in the title bar, OK,
-   time running out, and saving to WYT.state.results[id].
+   time running out, the questions, the trait reveal, and saving
+   to WYT.state.results[id] (with .trait = 0..1).
    If the timer runs out, the current state is scored as is.
    ========================================================= */
 (function () {
@@ -52,11 +56,8 @@
     score({ data: d }) {
       const weight = +d.wt.value, size = +d.sz.value;
       const loudness = ((weight - 100) / 800 + size / 100) / 2; // 0 quiet .. 1 very loud
-      return { letter: loudness >= 0.55 ? 'B' : 'L', weight, size, loudness: round2(loudness), moves: d.moves };
+      return { part: loudness, weight, size, loudness: round2(loudness), moves: d.moves };
     },
-    reveal: r => r.letter === 'B'
-      ? { big: 'B', word: 'Bold', line: 'loud and proud.' }
-      : { big: 'L', word: 'Light', line: 'less is more.' },
   };
 
   /* ======================================================
@@ -136,11 +137,10 @@
     score({ data: d }) {
       const onGrid = v => Math.abs(v - Math.round(v)) < 0.08;
       const aligned = d.shapes.filter(s => onGrid(s.x) && onGrid(s.y)).length;
-      return { letter: d.snap.checked || aligned >= 3 ? 'G' : 'F', snap: d.snap.checked, aligned, moves: d.moves };
+      // half for leaving snap on, half for how many shapes sit on the grid
+      const part = (d.snap.checked ? 0.5 : 0) + 0.5 * (aligned / 4);
+      return { part, snap: d.snap.checked, aligned, moves: d.moves };
     },
-    reveal: r => r.letter === 'G'
-      ? { big: 'G', word: 'Grid', line: 'grids are home.' }
-      : { big: 'F', word: 'Freeform', line: 'rules are optional.' },
   };
 
   /* ======================================================
@@ -188,11 +188,8 @@
     score({ data: d }) {
       const answered = d.picks.length;
       const retro = d.picks.filter(p => p.retro).length;
-      return { letter: answered && retro > answered / 2 ? 'R' : 'N', retro, answered, picks: d.picks.map(p => p.pick) };
+      return { part: answered ? retro / answered : 0.5, retro, answered, picks: d.picks.map(p => p.pick) };
     },
-    reveal: r => r.letter === 'R'
-      ? { big: 'R', word: 'Retro', line: 'vintage soul.' }
-      : { big: 'N', word: 'New', line: 'fresh out the box.' },
   };
 
   /* ======================================================
@@ -267,11 +264,8 @@
         : START_GAPS.slice();
       const spread = Math.max(...gaps) - Math.min(...gaps);
       const evenness = clamp(1 - spread / 0.5, 0, 1);
-      return { letter: evenness >= 0.75 ? 'K' : 'V', evenness: round2(evenness), gaps: gaps.map(round2), moves: d.moves };
+      return { part: evenness, evenness: round2(evenness), gaps: gaps.map(round2), moves: d.moves };
     },
-    reveal: r => r.letter === 'K'
-      ? { big: 'K', word: 'Kerner', line: 'tight. very tight.' }
-      : { big: 'V', word: 'Vibes', line: 'vibes over pixels.' },
   };
 
   /* ======================================================
@@ -288,9 +282,10 @@
       d.target = (api.state.name || 'Anon').toUpperCase().replace(/[^A-Z ]/g, '').trim() || 'ANON';
       Object.assign(d, { typed: '', keys: 0, backspaces: 0, firstAt: null });
 
-      const code = W.computeCode(api.state.results);
-      const type = W.TYPES[code];
-      d.code = code;
+      // your best font so far (from the first 4 traits)
+      const so = W.traitsFrom(api.state.results);
+      so[4] = 0.5;
+      const type = W.resultFor(so).type;
 
       const out = h('div', { class: 'type-out', style: `font-family:"${type.font}";font-weight:${type.weight}` });
       const render = () => out.replaceChildren(d.typed, h('span', { class: 'caret' }));
@@ -334,27 +329,45 @@
     teardown({ data: d }) { document.removeEventListener('keydown', d.onKey); },
     score({ data: d }) {
       const secs = d.firstAt ? Math.max(0.5, (performance.now() - d.firstAt) / 1000) : 0;
-      return {
-        speed: secs ? round1(d.keys / secs) : 0,   // keys per second
-        keys: d.keys, backspaces: d.backspaces,
-        correct: d.typed === d.target, typed: d.typed, code: d.code,
-      };
+      const speed = secs ? round1(d.keys / secs) : 0; // keys per second
+      // quick = fast typing (most of it) + few backspaces
+      const part = d.keys ? 0.7 * clamp(speed / 4, 0, 1) + 0.3 * (1 - clamp(d.backspaces / 4, 0, 1)) : 0.4;
+      return { part, speed, keys: d.keys, backspaces: d.backspaces, correct: d.typed === d.target, typed: d.typed };
     },
-    reveal: r => ({
-      big: String(r.speed),
-      word: `keys per sec · ${r.backspaces} backspace${r.backspaces === 1 ? '' : 's'}`,
-      line: r.backspaces > 2 ? 'undo is a lifestyle.' : r.correct ? 'speedy fingers.' : 'close enough.',
-    }),
+    detail: r => `${r.speed} keys/sec · ${r.backspaces} backspace${r.backspaces === 1 ? '' : 's'}`,
   };
 
   /* ---------- the list (names, times, copy) ---------- */
+  // questions: [question, answer for the LOW end, answer for the HIGH end]
   W.CHALLENGES = [
-    { id: 1, name: 'Make It Loud',   time: 10, hint: 'Drag to make it loud', quip: 'go big or go home.',     ...loud },
-    { id: 2, name: 'Snap Or Not',    time: 12, hint: 'Place the shapes',     quip: 'grids are a lifestyle.', ...snapOrNot },
-    { id: 3, name: 'Rapid Fire',     time: 8,  hint: 'Pick fast',            quip: "don't think. tap.",      ...rapidFire },
-    { id: 4, name: 'Even It Out',    time: 12, hint: 'Slide to even the gaps', quip: 'tight. very tight.',   ...evenItOut },
-    { id: 5, name: 'Type Your Name', time: 10, hint: 'Tap the keys',         quip: 'say it with letters.',   ...typeYourName },
+    { id: 1, trait: 0, name: 'Make It Loud', time: 25, hint: 'Drag to make it loud', ...loud,
+      questions: [['At a party you are...', 'deep in a kitchen chat', 'on the dance floor'],
+                  ['Your dream poster:', 'lots of white space', 'one giant word']] },
+    { id: 2, trait: 1, name: 'Snap Or Not', time: 25, hint: 'Place the shapes', ...snapOrNot,
+      questions: [['Your desktop is...', 'a beautiful mess', 'folders in folders'],
+                  ['On a trip you...', 'wing it', 'have a spreadsheet']] },
+    { id: 3, trait: 2, name: 'Rapid Fire', time: 25, hint: 'Pick fast', ...rapidFire,
+      questions: [['Dream studio:', 'glass and screens', 'an old print shop'],
+                  ['Music on...', 'a playlist', 'vinyl']] },
+    { id: 4, trait: 3, name: 'Even It Out', time: 25, hint: 'Slide to even the gaps', ...evenItOut,
+      questions: [['You spot a 1px gap.', 'nobody will see', 'fix it now'],
+                  ['Your files are named...', 'final_final_v3', 'v03_2026-11-05']] },
+    { id: 5, trait: 4, name: 'Type Your Name', time: 25, hint: 'Tap the keys', ...typeYourName,
+      questions: [['Ideas arrive...', 'slow, fully formed', 'fast, all at once'],
+                  ["You'd rather...", 'one more round', 'ship it today']] },
   ];
+
+  /* A scale between the two ends of a trait, with a marker where you are.
+     Shared with the card and compat screens. */
+  function spectrum(i, v, who) {
+    const t = W.TRAITS[i];
+    const marker = W.h('i', { class: 'spec-dot', style: `left:${(v * 100).toFixed(0)}%` });
+    return W.h('div', { class: 'spectrum' + (who ? ' ' + who : '') },
+      W.h('span', { class: 'spec-end' + (v < 0.5 ? ' on' : '') }, t.low),
+      W.h('span', { class: 'spec-track' }, marker),
+      W.h('span', { class: 'spec-end' + (v >= 0.5 ? ' on' : '') }, t.high));
+  }
+  W.spectrum = spectrum;
 
   /* ======================================================
      THE RUNNER · one screen per challenge
@@ -373,14 +386,16 @@
         const stage = h('div', { class: 'chal-stage waiting' });
         const count = h('div', { class: 'chal-count' });
         const reveal = h('div', { class: 'chal-reveal', hidden: true });
+        const ask = h('div', { class: 'chal-ask', hidden: true });
         const okBtn = T.magButton(h('button', {
           class: 'big', 'data-sfx': 'none',
           onclick: () => (phase === 'done' ? W.advance() : phase === 'play' && end('done')),
         }), 'OK', 'ok' + c.id);
 
         el.append(h('div', { class: 'stack chal-stack' },
-          T.sticker(`Challenge ${c.id}/5 · ${c.time}s`, c.id % 2 ? -4 : 3),
+          T.sticker(`${c.id}/5 · ${W.TRAITS[c.trait].name} · ${c.time}s`, c.id % 2 ? -4 : 3),
           T.ransom(c.name, 30, c.name),
+          T.label(`Measures: ${W.TRAITS[c.trait].low} vs ${W.TRAITS[c.trait].high}`),
           h('div', { class: 'window chal-win' },
             h('div', { class: 'title-bar' },
               h('div', { class: 'title-bar-text' }, c.name),
@@ -388,7 +403,7 @@
               h('div', { class: 'title-bar-controls' }, h('button', { 'aria-label': 'Help', 'data-bonk': true }))),
             h('div', { class: 'window-body chal-body' },
               T.label(c.hint),
-              h('div', { class: 'chal-wrap' }, stage, count, reveal))),
+              h('div', { class: 'chal-wrap' }, stage, count, ask, reveal))),
           okBtn));
 
         api = {
@@ -435,7 +450,7 @@
           cancelAnimationFrame(raf);
           clearInterval(countTimer);
           const seconds = round1(Math.min(c.time, api.elapsed()));
-          phase = 'done';
+          phase = 'ask';
           stage.classList.remove('waiting');
           stage.classList.add('locked');
           stage.querySelectorAll('input, button').forEach(x => { x.disabled = true; });
@@ -444,28 +459,58 @@
           if (why === 'time') fill.style.width = '0%';
 
           const result = Object.assign(c.score(api), { timedOut: why === 'time', seconds });
-          state.results[c.id] = result;
           if (c.teardown) c.teardown(api);
           W.sound.play(why === 'time' ? 'bonk' : 'ding');
           if (why === 'time') W.fx.shake();
 
-          const r = c.reveal(result);
-          reveal.replaceChildren(
-            why === 'time' && T.sticker("Time's up", -6),
-            T.ransom(r.big, 76, 'reveal' + c.id + r.big, { align: 'center', mixCase: false, level: 2 }),
-            T.label(r.word),
-            T.human(r.line));
-          reveal.hidden = false;
-          T.magButton(okBtn, 'Next', 'next' + c.id);
-          // live room: send my answer, show theirs, and let the host move us on
-          W.live.roundDone('challenge' + c.id, result, { nextBtn: okBtn, reveal });
+          // 2 quick questions, then the trait reveal
+          okBtn.disabled = true;
+          T.magButton(okBtn, 'Pick one', 'pick' + c.id);
+          const answers = [];
+          const askNext = () => {
+            const q = c.questions[answers.length];
+            if (!q) { ask.hidden = true; finish(); return; }
+            const pick = v => { answers.push(v); askNext(); };
+            const options = [[q[1], 0], [q[2], 1]];
+            if (Math.random() < 0.5) options.reverse();
+            ask.replaceChildren(
+              why === 'time' && answers.length === 0 && T.sticker("Time's up", -6),
+              T.label(`Quick question ${answers.length + 1}/2`),
+              T.human(q[0]),
+              h('div', { class: 'ask-options' },
+                options.map(([text, v]) => h('button', { class: 'ask-btn', onclick: () => pick(v) }, text))));
+            ask.hidden = false;
+          };
+          askNext();
+
+          function finish() {
+            phase = 'done';
+            const i = c.trait;
+            result.answers = answers;
+            result.trait = round2(clamp(0.5 * result.part + 0.25 * answers[0] + 0.25 * answers[1], 0, 1));
+            state.results[c.id] = result;
+
+            const word = W.traitWord(i, result.trait);
+            reveal.replaceChildren(
+              T.label(W.TRAITS[i].name),
+              T.ransom(word, 52, 'reveal' + c.id + word, { align: 'center', level: 2 }),
+              spectrum(i, result.trait),
+              T.human(W.traitLine(i, result.trait)),
+              c.detail && T.label(c.detail(result)));
+            reveal.hidden = false;
+            okBtn.disabled = false;
+            T.magButton(okBtn, 'Next', 'next' + c.id);
+            W.sound.play('ding');
+            // live room: send my answer, show theirs, and let the host move us on
+            W.live.roundDone('challenge' + c.id, result, { nextBtn: okBtn, reveal });
+          }
         }
       },
 
       exit() {
         cancelAnimationFrame(raf);
         clearInterval(countTimer);
-        if (phase !== 'done' && c.teardown && api) c.teardown(api);
+        if ((phase === 'countin' || phase === 'play') && c.teardown && api) c.teardown(api);
         phase = 'done';
         W.setTimer(null);
       },

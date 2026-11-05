@@ -351,15 +351,6 @@
       tag: '15 seconds', title: 'Draw yourself', quip: 'you are the mascot.',
       box: () => T.label('24 × 24 canvas soon'), button: 'Done',
     }),
-    card: placeholder({
-      tag: 'Your result', tilt: 3, title: 'Type card', quip: 'who are you, really?', enterSound: 'levelup',
-      box: () => [
-        W.state.avatar && Object.assign(W.avatarCanvas(W.state.avatar, 6), { className: 'avatar-preview' }),
-        T.ransom(Object.keys(W.state.results).length ? W.computeCode(W.state.results) : '????', 64, 'code',
-          { mixCase: false, align: 'center', level: 2 }),
-        T.label('Type code')],
-      button: 'Compare',
-    }),
     compat: placeholder({
       tag: 'You × friend', tilt: 3, title: 'Compatibility', quip: 'a classic pairing?',
       box: () => T.label('% match soon'), button: 'Play again', onNext: () => W.go('lobby'),
