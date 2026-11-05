@@ -322,6 +322,7 @@
     $('#boot-logo').src = W.iconURL('heart', 9);
     $('#title-icon').src = W.iconURL('heart', 2);
     buildBootTitle();
+    W.wallpaper.init();
     buildIcons();
     buildTaskbar();
 

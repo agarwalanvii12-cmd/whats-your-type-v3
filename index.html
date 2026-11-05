@@ -13,7 +13,7 @@
        human lines: Instrument Serif (italic) · labels: Space Mono -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Bagel+Fat+One&family=Bebas+Neue&family=Bungee&family=DM+Serif+Display&family=Instrument+Serif:ital@0;1&family=Playfair+Display:wght@700;900&family=Press+Start+2P&family=Rubik+Mono+One&family=Silkscreen:wght@400;700&family=Space+Mono:wght@400;700&family=VT323&display=swap">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Bagel+Fat+One&family=Bebas+Neue&family=Bungee&family=DM+Serif+Display:ital@0;1&family=Fraunces:ital,wght@0,900;1,300&family=Instrument+Serif:ital@0;1&family=Oswald:wght@300&family=Playfair+Display:ital,wght@0,700;0,900;1,400&family=Press+Start+2P&family=Rubik+Mono+One&family=Silkscreen:wght@400;700&family=Space+Mono:ital,wght@0,400;0,700;1,700&family=Unbounded:wght@300;900&family=VT323&family=Work+Sans:wght@200&display=swap">
 
   <!-- Win95 look (MIT) -->
   <link rel="stylesheet" href="https://unpkg.com/98.css@0.1.21/dist/98.css">
@@ -37,6 +37,7 @@
 
   <!-- DESKTOP -->
   <main id="desktop" class="desktop">
+    <canvas id="wallpaper" class="wallpaper" aria-hidden="true"></canvas>
     <ul id="icons" class="icons" aria-label="Desktop icons"></ul>
 
     <!-- The one Paint window that hosts every screen -->
@@ -98,6 +99,7 @@
   <!-- App (order matters: main.js last) -->
   <script src="js/icons.js"></script>
   <script src="js/type.js"></script>
+  <script src="js/wallpaper.js"></script>
   <script src="js/sound.js"></script>
   <script src="js/types.js"></script>
   <script src="js/net.js"></script>

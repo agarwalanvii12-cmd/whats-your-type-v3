@@ -49,18 +49,20 @@ html, body {
 /* ---------- THE COMPUTER: pixel fonts only ---------- */
 .window, .title-bar, button, option, select, table, ul.tree-view {
   font-family: var(--pixel);
-  font-size: 14px;
+  font-size: 15px;
   -webkit-font-smoothing: none;
 }
 button { touch-action: manipulation; letter-spacing: .02em; }
+/* 98.css greys disabled buttons out a lot; keep them readable */
+button:disabled { color: #5e5e5e; text-shadow: 1px 1px 0 #fff; }
 
 /* Win95 title bars were flat navy */
 .title-bar { background: var(--navy); padding: 4px 4px 4px 6px; }
-.title-bar-text { font-family: var(--pixel); font-size: 13px; font-weight: 700; display: flex; align-items: center; gap: 6px; }
+.title-bar-text { font-family: var(--pixel); font-size: 15px; font-weight: 700; display: flex; align-items: center; gap: 6px; }
 .title-bar-controls button { min-width: 22px; min-height: 20px; }
 
 /* form text is human, not computer */
-input, textarea, label { font-family: var(--mono); font-size: 16px; }
+input, textarea, label { font-family: var(--mono); font-size: 17px; }
 
 img.pixel, .boot-logo, .title-icon, .icon img, #start-icon, #mute-icon { image-rendering: pixelated; }
 
@@ -84,7 +86,7 @@ img.pixel, .boot-logo, .title-icon, .icon img, #start-icon, #mute-icon { image-r
   padding: .14em .13em .1em;
   line-height: 1;
   text-align: center;
-  transform: translateY(var(--dy, 0)) rotate(var(--r, 0deg));
+  transform: translateY(var(--dy, 0)) rotate(var(--r, 0deg)) scaleY(var(--sy, 1));
   box-shadow: 1px 1px 0 rgba(0, 0, 0, .12), 2px 4px 8px rgba(0, 0, 0, .22);
 }
 
@@ -93,7 +95,7 @@ img.pixel, .boot-logo, .title-icon, .icon img, #start-icon, #mute-icon { image-r
   margin: 0;
   font-family: var(--serif);
   font-style: italic;
-  font-size: 22px;
+  font-size: 25px;
   line-height: 1.15;
 }
 
@@ -101,10 +103,11 @@ img.pixel, .boot-logo, .title-icon, .icon img, #start-icon, #mute-icon { image-r
 .label {
   margin: 0;
   font-family: var(--mono);
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 700;
-  line-height: 1.3;
-  letter-spacing: .16em;
+  line-height: 1.35;
+  letter-spacing: .14em;
+  color: var(--ink);
   text-transform: uppercase;
 }
 label.label { display: block; }
@@ -113,13 +116,13 @@ label.label { display: block; }
 .sticker {
   display: inline-block;
   align-self: flex-start;
-  padding: 4px 11px 3px;
+  padding: 5px 13px 4px;
   background: #fff;
   color: var(--ink);
   border: 2px solid var(--ink);
   border-radius: 999px;
   font-family: var(--mono);
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 700;
   letter-spacing: .14em;
   text-transform: uppercase;
@@ -129,7 +132,7 @@ label.label { display: block; }
 }
 .sticker.tag {
   position: relative;
-  padding-left: 22px;
+  padding-left: 24px;
   border-radius: 4px 12px 12px 4px;
 }
 .sticker.tag::before { /* the punched hole */
@@ -149,9 +152,16 @@ label.label { display: block; }
 .desktop {
   position: fixed;
   inset: 0 0 calc(var(--taskbar-h) + var(--safe-b)) 0;
-  background-color: var(--pink);
-  background-image: radial-gradient(var(--pink-d) 1px, transparent 1.4px);
-  background-size: 8px 8px;
+  background: #6fb4ff;  /* sky, until the wallpaper canvas is drawn */
+}
+/* Pixel sky + hills, drawn in js/wallpaper.js. Fixed to the whole
+   screen so it sits behind the taskbar edge too. */
+.wallpaper {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  image-rendering: pixelated;
 }
 
 .icons {
@@ -163,6 +173,7 @@ label.label { display: block; }
   padding: 0;
   list-style: none;
   gap: 14px;
+  z-index: 1;
 }
 .icon {
   display: flex;
@@ -175,23 +186,25 @@ label.label { display: block; }
   background: none;
   border: 0;
   box-shadow: none;
-  color: var(--ink);
-  font-size: 11px;
+  color: #fff;
+  font-size: 12px;
 }
 .icon:active { box-shadow: none; padding: 4px; }
 .icon:focus { outline: none; }
 .icon img { width: 48px; height: 48px; }
-.icon span { margin-top: 4px; padding: 1px 3px; text-align: center; line-height: 1.25; }
-.icon.selected span { background: var(--navy); color: #fff; outline: 1px dotted #fff; }
+.icon span { margin-top: 4px; padding: 1px 3px; text-align: center; line-height: 1.25; text-shadow: 1px 1px 0 #000; }
+.icon.selected span { background: var(--navy); color: #fff; outline: 1px dotted #fff; text-shadow: none; }
 .icon.selected img { filter: brightness(.7) sepia(1) hue-rotate(190deg) saturate(4); }
 
 /* ---------- PAINT WINDOW ---------- */
+/* Phone: Paint fills the whole screen */
 .paint {
   position: absolute;
-  top: calc(6px + var(--safe-t));
-  left: 6px;
-  right: 6px;
-  bottom: 6px;
+  top: var(--safe-t);
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 1;
   display: flex;
   flex-direction: column;
 }
@@ -219,7 +232,7 @@ label.label { display: block; }
   background: none;
   box-shadow: none;
   font-family: var(--term);
-  font-size: 20px;
+  font-size: 22px;
 }
 .menubar button:active { box-shadow: inset -1px -1px #fff, inset 1px 1px #808080; padding: 0 8px; }
 .menubar button:focus { outline: none; }
@@ -246,7 +259,7 @@ label.label { display: block; }
 }
 
 .status-bar { margin: 3px; }
-.status-bar-field { font-family: var(--term); font-size: 18px; line-height: 1; padding: 2px 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.status-bar-field { font-family: var(--term); font-size: 20px; line-height: 1; padding: 2px 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
 /* ---------- SCREEN CONTENT ---------- */
 .stack {
@@ -262,11 +275,11 @@ label.label { display: block; }
 .row.end { justify-content: flex-end; }
 .row.end > * { flex: 0 0 auto; }
 
-button.big { min-height: 50px; font-size: 16px; font-weight: 700; }
-.row button { min-height: 44px; font-size: 13px; }
+button.big { min-height: 52px; font-size: 17px; font-weight: 700; }
+.row button { min-height: 46px; font-size: 14px; }
 .field { display: flex; flex-direction: column; gap: 6px; }
 input[type="text"] { height: 44px; padding: 4px 10px; font-size: 18px; }
-.muted { color: var(--grey-d); }
+.muted { color: #555; }
 
 .placeholder {
   display: flex;
@@ -276,8 +289,8 @@ input[type="text"] { height: 44px; padding: 4px 10px; font-size: 18px; }
   gap: 14px;
   aspect-ratio: 1;
   padding: 16px;
-  border: 2px dashed var(--grey-d);
-  color: var(--grey-d);
+  border: 2px dashed #8a8a8a;
+  color: #333;
   text-align: center;
 }
 
@@ -314,7 +327,7 @@ input[type="text"] { height: 44px; padding: 4px 10px; font-size: 18px; }
   white-space: nowrap;
   text-overflow: ellipsis;
   font-family: var(--term);
-  font-size: 19px;
+  font-size: 20px;
 }
 .pressed, .start-btn[aria-expanded="true"] {
   box-shadow: inset -1px -1px #fff, inset 1px 1px #0a0a0a, inset -2px -2px #dfdfdf, inset 2px 2px #808080;
@@ -342,7 +355,7 @@ input[type="text"] { height: 44px; padding: 4px 10px; font-size: 18px; }
 }
 .mute-btn:active { box-shadow: none; padding: 0; }
 .mute-btn img { width: 24px; height: 20px; }
-.clock { font-family: var(--term); font-size: 20px; white-space: nowrap; }
+.clock { font-family: var(--term); font-size: 22px; white-space: nowrap; }
 
 /* Start menu */
 .start-menu {
@@ -377,7 +390,7 @@ input[type="text"] { height: 44px; padding: 4px 10px; font-size: 18px; }
   text-align: left;
   background: none;
   box-shadow: none;
-  font-size: 14px;
+  font-size: 15px;
 }
 .start-items button:hover, .start-items button:focus-visible { background: var(--navy); color: #fff; outline: none; }
 
