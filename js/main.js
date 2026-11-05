@@ -214,7 +214,9 @@
       tag: 'Your result', tilt: 3, title: 'Type card', quip: 'who are you, really?', enterSound: 'levelup',
       box: () => [
         W.state.avatar && Object.assign(W.avatarCanvas(W.state.avatar, 6), { className: 'avatar-preview' }),
-        T.ransom('????', 64, 'code', { mixCase: false, align: 'center', level: 2 }), T.label('Type code')],
+        T.ransom(Object.keys(W.state.results).length ? W.computeCode(W.state.results) : '????', 64, 'code',
+          { mixCase: false, align: 'center', level: 2 }),
+        T.label('Type code')],
       button: 'Compare',
     }),
     compat: placeholder({

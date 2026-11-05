@@ -13,6 +13,15 @@
     { name: 'Precision', letters: ['K', 'V'], words: ['Kerner', 'Vibes'] },
   ];
 
+  // Results from challenges 1-4 → a 4-letter code like "BGRK".
+  // A challenge not played yet counts as its second letter (L, F, N, V).
+  W.computeCode = function (results = {}) {
+    return W.AXES.map((axis, i) => {
+      const letter = results[i + 1] && results[i + 1].letter;
+      return axis.letters.includes(letter) ? letter : axis.letters[1];
+    }).join('');
+  };
+
   // Placeholders from BRIEF.md. Anvii will rename these.
   W.TYPES = {
     BGRK: { name: 'The Letterpress Boss', font: 'Playfair Display', weight: 900 },
