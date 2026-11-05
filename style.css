@@ -362,6 +362,7 @@ input[type="text"] { height: 44px; padding: 4px 10px; font-size: 18px; }
 .tool-btn { display: grid; place-items: center; width: 44px; height: 44px; min-width: 0; min-height: 0; padding: 0; }
 .tool-btn:active { padding: 0; }
 .tool-btn img { width: 32px; image-rendering: pixelated; }
+.tool-btn:disabled img { opacity: .35; filter: grayscale(1); }
 .draw-canvas { position: relative; line-height: 0; }
 .draw-canvas canvas { display: block; touch-action: none; box-shadow: 0 0 0 2px var(--ink), 4px 4px 0 2px rgba(0, 0, 0, .18); }
 .draw-overlay {
@@ -369,13 +370,14 @@ input[type="text"] { height: 44px; padding: 4px 10px; font-size: 18px; }
   inset: 0;
   display: grid;
   place-items: center;
+  grid-template: 1fr / 1fr;   /* one cell that fills the canvas */
   pointer-events: none;
   line-height: 1.2;
   background: rgba(255, 255, 255, .6);
 }
 .draw-overlay[hidden] { display: none; }
-.draw-canvas.locked .draw-overlay { background: transparent; }
-.draw-overlay .sticker { font-size: 20px; padding: 8px 18px 6px; box-shadow: 3px 3px 0 var(--ink); }
+.draw-canvas.locked .draw-overlay { background: transparent; place-items: end center; padding-bottom: 14px; }
+.draw-overlay .sticker { align-self: auto; font-size: 20px; padding: 8px 18px 6px; box-shadow: 3px 3px 0 var(--ink); }
 .palette-bar { display: flex; gap: 6px; align-items: stretch; }
 .current-color { flex: none; width: 44px; border: 2px solid var(--ink); box-shadow: inset 0 0 0 2px #fff; }
 .swatches { flex: 1; display: grid; grid-template-columns: repeat(14, 1fr); gap: 2px; }

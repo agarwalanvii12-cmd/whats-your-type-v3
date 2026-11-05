@@ -6,6 +6,9 @@
    28-colour Paint palette. A 3-2-1 count-in, then a 15s
    countdown in the title bar. At 0 the canvas locks.
 
+   Undo button (or Cmd/Ctrl+Z) steps back one stroke.
+   Leave the canvas empty and you get one of 3 default smileys.
+
    The drawing is saved as WYT.state.avatar: 576 numbers,
    one per pixel, row by row. Each number is a position in
    WYT.PAINT28 (0..27), or -1 for an empty (white) pixel.
@@ -80,6 +83,46 @@
     return out;
   }
 
+  /* ---------- 3 default faces (if the canvas is left empty) ----------
+     A round face in a skin colour with a black outline, plus features.
+     Numbers are positions in PAINT28: 0 black, 14 white, 16 red,
+     17 yellow, 23 mint, 25 periwinkle. */
+  function face(skin, features) {
+    const cells = new Array(SIZE * SIZE).fill(-1);
+    for (let y = 0; y < SIZE; y++) {
+      for (let x = 0; x < SIZE; x++) {
+        const d = Math.hypot(x - 11.5, y - 11.5);
+        if (d <= 10.6) cells[y * SIZE + x] = d > 9.6 ? 0 : skin;
+      }
+    }
+    for (const [color, x0, x1, y0, y1 = y0] of features) {
+      for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) cells[y * SIZE + x] = color;
+    }
+    return cells;
+  }
+  // features: [colour, x from, x to, y from, y to]
+  const FACES = [
+    // 1. classic yellow smiley
+    face(17, [
+      [0, 8, 9, 7, 10], [0, 14, 15, 7, 10],
+      [0, 6, 6, 13], [0, 7, 7, 14], [0, 8, 8, 15], [0, 9, 14, 16], [0, 15, 15, 15],
+      [0, 16, 16, 14], [0, 17, 17, 13],
+    ]),
+    // 2. periwinkle wink with blush and an open smile
+    face(25, [
+      [0, 7, 10, 9], [0, 14, 15, 7, 10],
+      [16, 5, 7, 12], [16, 16, 18, 12],
+      [0, 8, 15, 14], [0, 8, 8, 15], [16, 9, 14, 15], [0, 15, 15, 15],
+      [0, 9, 9, 16], [16, 10, 13, 16], [0, 14, 14, 16], [0, 10, 13, 17],
+    ]),
+    // 3. mint face in sunglasses with a toothy grin
+    face(23, [
+      [0, 5, 18, 8], [0, 6, 10, 9, 10], [0, 13, 17, 9, 10], [14, 7, 7, 9], [14, 14, 14, 9],
+      [0, 7, 16, 15], [0, 8, 8, 16], [14, 9, 14, 16], [0, 15, 15, 16], [0, 9, 14, 17],
+    ]),
+  ];
+  W.DEFAULT_FACES = FACES;
+
   /* ---------- the screen ---------- */
   W.screens = W.screens || {};
   W.screens.draw = {
@@ -98,12 +141,29 @@
       let drawing = false, lastCell = -1;
       let dirty = true;
 
+      // undo: a stack of earlier versions of the canvas
+      const history = [];
+      let pending = null; // snapshot taken at the start of a stroke, saved once it changes something
+      const remember = snap => {
+        history.push(snap);
+        if (history.length > 40) history.shift();
+        undoBtn.disabled = false;
+      };
+      const undo = () => {
+        if (phase !== 'drawing' || !history.length) return;
+        cells.splice(0, cells.length, ...history.pop());
+        dirty = true;
+        undoBtn.disabled = !history.length;
+      };
+
       /* ----- tools column ----- */
       const toolBtn = (id, label) => h('button', {
         class: 'tool-btn', 'aria-label': label, title: label, 'data-tool': id,
         onclick: () => {
+          if (id === 'undo') return undo();
           if (id === 'clear') {
-            if (phase !== 'drawing') return;
+            if (phase !== 'drawing' || cells.every(c => c < 0)) return;
+            remember(cells.slice());
             cells.fill(-1); dirty = true;
             return;
           }
@@ -111,13 +171,20 @@
           tools.querySelectorAll('[data-tool]').forEach(b =>
             b.classList.toggle('pressed', b.dataset.tool === tool));
         },
-      }, h('img', { src: W.iconURL(id === 'clear' ? 'trash' : id, 2), alt: '' }));
+      }, h('img', { src: W.iconURL({ clear: 'trash', fill: 'bucket' }[id] || id, 2), alt: '' }));
 
       const tools = h('div', { class: 'tools', role: 'toolbar', 'aria-label': 'Tools' },
         toolBtn('pencil', 'Pencil'), toolBtn('fill', 'Fill'), toolBtn('eraser', 'Eraser'),
-        toolBtn('clear', 'Clear'));
-      tools.querySelector('[data-tool=fill] img').src = W.iconURL('bucket', 2);
+        toolBtn('undo', 'Undo'), toolBtn('clear', 'Clear'));
       tools.querySelector('[data-tool=pencil]').classList.add('pressed');
+      const undoBtn = tools.querySelector('[data-tool=undo]');
+      undoBtn.disabled = true;
+
+      // Cmd/Ctrl+Z on a laptop
+      this.onKey = e => {
+        if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'z') { e.preventDefault(); undo(); }
+      };
+      document.addEventListener('keydown', this.onKey);
 
       /* ----- palette ----- */
       const current = h('div', { class: 'current-color', 'aria-hidden': 'true' });
@@ -167,7 +234,10 @@
       };
       const paint = i => {
         const v = tool === 'eraser' ? -1 : color;
-        if (cells[i] !== v) { cells[i] = v; dirty = true; }
+        if (cells[i] === v) return;
+        if (pending) { remember(pending); pending = null; }
+        cells[i] = v;
+        dirty = true;
       };
 
       this.p5 = new p5(p => {
@@ -192,9 +262,11 @@
             cv.setPointerCapture(e.pointerId);
             const i = cellAt(e);
             if (tool === 'fill') {
-              if (flood(cells, i, color)) { dirty = true; strokes++; }
+              const before = cells.slice();
+              if (flood(cells, i, color)) { remember(before); dirty = true; strokes++; }
               return;
             }
+            pending = cells.slice();
             drawing = true;
             lastCell = i;
             paint(i);
@@ -204,7 +276,7 @@
             const i = cellAt(e);
             if (i !== lastCell) { lineCells(lastCell, i).forEach(paint); lastCell = i; }
           });
-          const up = () => { if (drawing) strokes++; drawing = false; };
+          const up = () => { if (drawing) strokes++; drawing = false; pending = null; };
           cv.addEventListener('pointerup', up);
           cv.addEventListener('pointercancel', up);
         };
@@ -267,9 +339,15 @@
         drawing = false;
         dirty = true;
         holder.classList.add('locked');
+        undoBtn.disabled = true;
         W.setTimer(why === 'time' ? 0 : Math.max(0, (endsAt - performance.now()) / 1000));
 
         const used = startedAt ? Math.min(SECONDS, (performance.now() - startedAt) / 1000) : 0;
+
+        // Nothing drawn? Hand them one of the default smileys.
+        const empty = cells.every(c => c < 0);
+        if (empty) cells.splice(0, cells.length, ...FACES[Math.floor(Math.random() * FACES.length)]);
+
         state.avatar = cells.slice();
         state.drawStats = {
           seconds: Math.round(used * 10) / 10,
@@ -277,9 +355,15 @@
           filled: cells.filter(c => c >= 0).length,
           colors: new Set(cells.filter(c => c >= 0)).size,
           ranOut: why === 'time',
+          defaultFace: empty,
         };
 
-        if (why === 'time') {
+        if (empty) {
+          W.sound.play(why === 'time' ? 'bonk' : 'ding');
+          overlay.hidden = false;
+          overlay.replaceChildren(T.sticker("Here's a smile", -6));
+          T.magButton(doneBtn, 'Next', 'draw-next');
+        } else if (why === 'time') {
           W.sound.play('bonk');
           overlay.hidden = false;
           overlay.replaceChildren(T.sticker("Time's up", -8));
@@ -293,6 +377,7 @@
 
     exit() {
       clearInterval(this.countTimer);
+      document.removeEventListener('keydown', this.onKey);
       if (this.p5) { this.p5.remove(); this.p5 = null; }
       W.setTimer(null);
     },
