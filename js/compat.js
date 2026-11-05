@@ -131,7 +131,9 @@
           h('div', { class: 'window-body share-body col' }, input, error)),
 
         compare,
-        T.magButton(h('button', { onclick: () => { state.friend = null; W.go('lobby'); } }), 'Play again', 'again')));
+        h('div', { class: 'row' },
+          T.magButton(h('button', { onclick: () => W.rematchSolo() }), 'Rematch', 'rematch-solo'),
+          T.magButton(h('button', { onclick: () => { state.friend = null; W.go('lobby'); } }), 'Lobby', 'lobby'))));
     },
 
     /* the result */
@@ -140,6 +142,7 @@
       const m = W.compatibility(me.code, friend.code);
       const tA = W.TYPES[me.code], tB = W.TYPES[friend.code];
       W.sound.play(m.score >= 85 ? 'levelup' : 'ding');
+      if (m.score >= 85) setTimeout(() => W.fx.burst(this.el.querySelector('.compat-stack .ransom')), 200);
 
       const rows = W.AXES.map((axis, i) => {
         const same = me.code[i] === friend.code[i];
@@ -170,7 +173,9 @@
             ]
           : [
               T.magButton(h('button', { class: 'big', onclick: () => { state.friend = null; this.render(); } }), 'Try another code', 'another'),
-              T.magButton(h('button', { onclick: () => { state.friend = null; W.go('lobby'); } }), 'Play again', 'again'),
+              h('div', { class: 'row' },
+                T.magButton(h('button', { onclick: () => W.rematchSolo() }), 'Rematch', 'rematch-solo'),
+                T.magButton(h('button', { onclick: () => { state.friend = null; W.go('lobby'); } }), 'Lobby', 'lobby')),
             ]));
     },
 

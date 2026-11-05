@@ -288,6 +288,14 @@
     },
   };
 
+  /* Solo rematch: same name, straight back to drawing */
+  W.rematchSolo = function () {
+    W.state.friend = null;
+    W.state.mode = 'solo';
+    W.resetGame();
+    W.go('draw');
+  };
+
   /* ---------- WIN95 ERROR DIALOG (connection problems) ---------- */
   W.showError = function (kind, why) {
     document.querySelector('.modal')?.remove();
@@ -516,6 +524,7 @@
     $('#title-icon').src = W.iconURL('heart', 2);
     buildBootTitle();
     W.wallpaper.init();
+    W.fx.init();
     T.magButton($('#boot-tap'), 'Tap to start', 'boot-tap');
     buildPalettes();
     buildIcons();

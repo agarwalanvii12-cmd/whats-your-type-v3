@@ -280,9 +280,12 @@
       const dl = T.magButton(h('button', { disabled: true }), 'Download PNG', 'dl');
       const next = T.magButton(h('button', { class: 'big', onclick: () => W.next() }), 'Compare', 'compare');
 
+      const codeEl = T.ransom(code, 64, 'code' + code, { mixCase: false });
+      codeEl.classList.add('waiting');
+
       el.append(h('div', { class: 'stack card-stack' },
         T.sticker('Your type', -4),
-        T.ransom(code, 64, 'code' + code, { mixCase: false }),
+        codeEl,
         T.human(`you are ${type.name.replace(/^The /, 'the ')}.`),
         box,
         isIOS() && T.label('Tip: long-press the card to save'),
@@ -292,7 +295,11 @@
       W.renderCard({ name, code, type, avatar, stats }).then(card => {
         if (this.token !== token) return; // left the screen already
         box.replaceChildren(h('img', { class: 'card-img', src: card.dataURL, alt: `Type Card: ${name}, ${code}, ${type.name}` }));
+        // level up: the code drops in letter by letter, confetti, jingle
+        codeEl.classList.remove('waiting');
+        codeEl.classList.add('drop');
         W.sound.play('levelup');
+        setTimeout(() => W.fx.burst(codeEl), 350);
         state.card = { code, typeName: type.name, font: type.font, stats, dataURL: card.dataURL };
         const file = `whats-your-type-${code}-${name.replace(/[^a-z0-9]+/gi, '-')}.png`;
         dl.disabled = false;

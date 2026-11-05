@@ -798,9 +798,80 @@ input[type="range"]::-moz-range-thumb {
 
 @keyframes blink { 50% { opacity: 0; } }
 
+/* ---------- POLISH ---------- */
+
+/* pixel cursors (mouse only; set up in js/fx.js) */
+@media (hover: hover) and (pointer: fine) {
+  body { cursor: var(--cursor, auto); }
+  button:not(:disabled), a, label[for], input[type="checkbox"], input[type="range"], .swatch, .shape, .kern-letter, .boot { cursor: var(--cursor-hand, pointer); }
+  .draw-canvas canvas { cursor: var(--cursor-pencil, crosshair); }
+  input[type="text"], textarea { cursor: text; }
+}
+
+/* halftone dots over the sky, fading out toward the hills */
+.desktop::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background-image: radial-gradient(rgba(255, 255, 255, .32) 1.1px, transparent 1.5px);
+  background-size: 7px 7px;
+  -webkit-mask-image: linear-gradient(to bottom, #000 0%, transparent 58%);
+  mask-image: linear-gradient(to bottom, #000 0%, transparent 58%);
+}
+/* halftone on the grey Paint workspace too */
+.paint-body { background-image: radial-gradient(rgba(0, 0, 0, .18) 1px, transparent 1.3px); background-size: 4px 4px; }
+
+/* twinkling starbursts in the sky (laptop) */
+.sparkles { display: none; position: fixed; inset: 0; pointer-events: none; }
+.sparkles img { position: absolute; image-rendering: pixelated; animation: twinkle 2s steps(4) infinite; }
+@keyframes twinkle { 0%, 100% { opacity: 0; transform: scale(.5); } 50% { opacity: 1; transform: scale(1); } }
+
+/* time's up: shake + glitch */
+.paint.shake { animation: shake .45s steps(8) both; }
+.paint.shake .screen { animation: glitch .45s steps(3) both; }
+@keyframes shake {
+  0%, 100% { translate: 0 0; }
+  15% { translate: -9px 3px; }
+  30% { translate: 8px -4px; }
+  45% { translate: -6px 2px; }
+  60% { translate: 5px -2px; }
+  75% { translate: -3px 1px; }
+}
+@keyframes glitch {
+  0% { filter: none; transform: none; }
+  33% { filter: hue-rotate(150deg) saturate(3) contrast(1.3); transform: skewX(-5deg); }
+  66% { filter: invert(.85); transform: skewX(4deg) translateX(4px); }
+  100% { filter: none; transform: none; }
+}
+
+/* level up: the Type Code drops in letter by letter */
+.ransom.waiting { visibility: hidden; }
+.ransom.drop .rt { animation: tile-drop .55s cubic-bezier(.2, 1.6, .4, 1) both; animation-delay: calc(var(--i, 0) * 110ms); }
+@keyframes tile-drop { from { opacity: 0; transform: translateY(-60px) rotate(-25deg) scale(1.6); } }
+
+/* confetti pixels and starbursts (js/fx.js burst) */
+.fx-px {
+  position: fixed;
+  z-index: 95;
+  width: 10px;
+  height: 10px;
+  margin: -5px 0 0 -5px;
+  pointer-events: none;
+  border: 1px solid var(--ink);
+  animation: fly 1.1s cubic-bezier(.15, .8, .3, 1) forwards;
+}
+.fx-px.star { width: 30px; height: 30px; margin: -15px 0 0 -15px; border: 0; image-rendering: pixelated; }
+@keyframes fly {
+  0% { transform: translate(0, 0) scale(var(--s, 1)); opacity: 1; }
+  80% { opacity: 1; }
+  100% { transform: translate(var(--dx), calc(var(--dy) + 40px)) scale(var(--s, 1)) rotate(180deg); opacity: 0; }
+}
+
 /* ---------- BIGGER SCREENS ---------- */
 @media (min-width: 760px) {
   .icons { display: grid; }
+  .sparkles { display: block; }
   .paint {
     top: 50%;
     left: 50%;
@@ -826,5 +897,6 @@ input[type="range"]::-moz-range-thumb {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .boot-tap, .card-img { animation: none; }
+  .boot-tap, .card-img, .sparkles img, .ransom.drop .rt { animation: none; }
+  .sparkles img { opacity: .8; }
 }

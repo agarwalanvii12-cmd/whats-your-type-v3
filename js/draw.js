@@ -343,6 +343,7 @@
         holder.classList.add('locked');
         undoBtn.disabled = true;
         W.setTimer(why === 'time' ? 0 : Math.max(0, (endsAt - performance.now()) / 1000));
+        if (why === 'time') W.fx.shake();
 
         const used = startedAt ? Math.min(SECONDS, (performance.now() - startedAt) / 1000) : 0;
 

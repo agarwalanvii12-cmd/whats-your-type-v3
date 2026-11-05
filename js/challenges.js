@@ -447,6 +447,7 @@
           state.results[c.id] = result;
           if (c.teardown) c.teardown(api);
           W.sound.play(why === 'time' ? 'bonk' : 'ding');
+          if (why === 'time') W.fx.shake();
 
           const r = c.reveal(result);
           reveal.replaceChildren(

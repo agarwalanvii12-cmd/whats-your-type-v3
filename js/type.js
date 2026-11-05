@@ -174,12 +174,14 @@
     const longest = Math.max(1, ...text.split(/\s+/).map(w => w.length));
     wrap.style.fontSize = `min(${size}px, calc((min(100cqi, 420px) - 40px) / ${(longest * 1.15).toFixed(2)}))`;
 
+    let index = 0;
     tiles(text, seed, opts).forEach(word => {
       const w = document.createElement('span');
       w.className = 'ransom-word';
       w.setAttribute('aria-hidden', 'true');
       for (const t of word) {
         const el = document.createElement('span');
+        el.style.setProperty('--i', index++); // for the drop-in animation
         el.className = 'rt' + (t.outlined ? ' outlined' : '');
         el.textContent = t.glyph;
         styleLetter(el, t.font, t.em);
