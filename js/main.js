@@ -1,0 +1,328 @@
+/* =========================================================
+   main.js · screen state machine + desktop, taskbar, boot
+   Flow: boot → lobby → draw → challenge1..5 → card → compat
+
+   Every screen is an object { enter(el, state), exit() }.
+   enter() draws the screen into the Paint window (el).
+   Other files can register real screens on WYT.screens
+   before this file runs; anything missing gets a placeholder.
+
+   Dev shortcut: open index.html#draw (or #card etc.) to
+   skip straight to that screen.
+   ========================================================= */
+(function () {
+  'use strict';
+  const W = (window.WYT = window.WYT || {});
+  const $ = sel => document.querySelector(sel);
+
+  const ORDER = [
+    'boot', 'lobby', 'draw',
+    'challenge1', 'challenge2', 'challenge3', 'challenge4', 'challenge5',
+    'card', 'compat',
+  ];
+  const LABELS = {
+    boot: 'Boot', lobby: 'Lobby', draw: 'Draw yourself',
+    challenge1: 'Challenge 1', challenge2: 'Challenge 2', challenge3: 'Challenge 3',
+    challenge4: 'Challenge 4', challenge5: 'Challenge 5',
+    card: 'Type Card', compat: 'Compatibility',
+  };
+
+  /* ---------- game state (shared by every screen) ---------- */
+  W.state = { name: '', mode: 'solo', avatar: null, results: {}, card: null };
+  W.resetGame = function () {
+    W.state.avatar = null;
+    W.state.results = {};
+    W.state.card = null;
+  };
+
+  /* ---------- tiny helper to build HTML elements ---------- */
+  // h('button', { class: 'big', onclick: fn }, 'OK')
+  function h(tag, attrs, ...kids) {
+    const el = document.createElement(tag);
+    for (const [k, v] of Object.entries(attrs || {})) {
+      if (k === 'class') el.className = v;
+      else if (k.startsWith('on')) el.addEventListener(k.slice(2), v);
+      else if (v === true) el.setAttribute(k, '');
+      else if (v !== false && v != null) el.setAttribute(k, v);
+    }
+    for (const kid of kids.flat()) {
+      if (kid == null || kid === false) continue;
+      el.append(kid.nodeType ? kid : document.createTextNode(kid));
+    }
+    return el;
+  }
+  W.h = h;
+
+  /* ---------- the state machine ---------- */
+  W.screens = W.screens || {};
+  let current = null;
+
+  W.go = function (name) {
+    const next = W.screens[name];
+    if (!next) return;
+    const prev = current && W.screens[current];
+    if (prev && prev.exit) prev.exit();
+
+    current = name;
+    document.body.dataset.screen = name;
+    closeStartMenu();
+    W.setTimer(null);
+
+    const el = $('#screen');
+    el.replaceChildren();
+    el.scrollTop = 0;
+
+    $('#status-step').textContent = `Step ${ORDER.indexOf(name)} of ${ORDER.length - 1}`;
+    $('#status-name').textContent = LABELS[name];
+    $('#status-mode').textContent = W.state.mode;
+
+    next.enter(el, W.state);
+  };
+  W.next = () => W.go(ORDER[ORDER.indexOf(current) + 1] || 'lobby');
+  W.current = () => current;
+
+  // Countdown in the Paint title bar. W.setTimer(7.2) shows 0:08. null hides it.
+  W.setTimer = function (seconds) {
+    const t = $('#title-timer');
+    if (seconds == null) { t.hidden = true; t.classList.remove('urgent'); return; }
+    const s = Math.max(0, Math.ceil(seconds));
+    t.hidden = false;
+    t.textContent = `0:${String(s).padStart(2, '0')}`;
+    t.classList.toggle('urgent', s <= 3);
+  };
+
+  /* ---------- BOOT ---------- */
+  const BOOT_LINES = [
+    'Starting up...', 'Loading pixels...', 'Kerning letters...',
+    'Warming up CRT...', 'Mixing palette...', 'Ready.',
+  ];
+
+  W.screens.boot = {
+    enter() {
+      const boot = $('#boot'), fill = $('#boot-fill'), bar = $('#boot-bar');
+      const status = $('#boot-status'), tap = $('#boot-tap');
+      boot.hidden = false;
+      boot.classList.remove('ready');
+      tap.hidden = true;
+      fill.style.width = '0%';
+
+      let pct = 0;
+      this.timer = setInterval(() => {
+        pct = Math.min(100, pct + 4 + Math.random() * 9);
+        // snap to whole blocks so it looks chunky
+        fill.style.width = Math.floor(pct / 8) * 8 + (pct >= 100 ? 4 : 0) + '%';
+        bar.setAttribute('aria-valuenow', Math.round(pct));
+        status.textContent = BOOT_LINES[Math.floor((pct / 100) * (BOOT_LINES.length - 1))];
+        if (pct >= 100) {
+          clearInterval(this.timer);
+          this.timer = null;
+          boot.classList.add('ready');
+          tap.hidden = false;
+          tap.focus();
+        }
+      }, 180);
+
+      this.onTap = () => {
+        if (!boot.classList.contains('ready')) return;
+        W.sound.unlock();
+        W.sound.play('chime');
+        W.go('lobby');
+      };
+      boot.addEventListener('click', this.onTap);
+    },
+    exit() {
+      clearInterval(this.timer);
+      $('#boot').removeEventListener('click', this.onTap);
+      $('#boot').hidden = true;
+    },
+  };
+
+  /* ---------- LOBBY ---------- */
+  const cleanName = s => s.replace(/[^\p{L}\p{N} '._-]/gu, '').trim().slice(0, 12);
+
+  W.screens.lobby = {
+    enter(el, state) {
+      const input = h('input', {
+        type: 'text', id: 'player-name', maxlength: '12',
+        autocomplete: 'off', enterkeyhint: 'go', placeholder: 'Your name',
+        value: state.name,
+      });
+      const solo = h('button', {
+        class: 'big',
+        onclick: () => {
+          state.name = cleanName(input.value) || 'Anon';
+          state.mode = 'solo';
+          W.resetGame();
+          W.go('draw');
+        },
+      }, 'Play solo');
+      input.addEventListener('keydown', e => { if (e.key === 'Enter') solo.click(); });
+
+      el.append(h('div', { class: 'stack' },
+        h('p', { class: 'kicker' }, 'MBTI for designers'),
+        h('h1', { class: 'screen-title' }, "What's your type?"),
+        h('div', { class: 'field-row-stacked' },
+          h('label', { for: 'player-name' }, 'Your name'),
+          input),
+        solo,
+        h('div', { class: 'row' },
+          h('button', { disabled: true }, 'Create room'),
+          h('button', { disabled: true }, 'Join room')),
+        h('p', { class: 'hint' }, 'Rooms coming soon'),
+      ));
+    },
+  };
+
+  /* ---------- PLACEHOLDERS (replaced in later steps) ---------- */
+  function placeholder({ kicker, title, box, button, onNext }) {
+    return {
+      enter(el) {
+        el.append(h('div', { class: 'stack' },
+          h('p', { class: 'kicker' }, kicker),
+          h('h1', { class: 'screen-title' }, title),
+          h('div', { class: 'placeholder' }, box),
+          h('button', { class: 'big', onclick: onNext || (() => W.next()) }, button),
+        ));
+      },
+    };
+  }
+
+  const fallbacks = {
+    draw: placeholder({ kicker: '15 seconds', title: 'Draw yourself', box: 'canvas soon', button: 'Done' }),
+    card: placeholder({ kicker: 'Your result', title: 'Type Card', box: 'card soon', button: 'Compare' }),
+    compat: placeholder({
+      kicker: 'You × friend', title: 'Compatibility', box: 'match soon',
+      button: 'Play again', onNext: () => W.go('lobby'),
+    }),
+  };
+  W.CHALLENGES.forEach(c => {
+    fallbacks['challenge' + c.id] = placeholder({
+      kicker: `Challenge ${c.id} of 5 · ${c.time}s`,
+      title: c.name, box: c.hint, button: 'OK',
+    });
+  });
+  for (const [name, scr] of Object.entries(fallbacks)) {
+    if (!W.screens[name]) W.screens[name] = scr;
+  }
+
+  /* ---------- ABOUT DIALOG ---------- */
+  function openAbout() {
+    if ($('.modal')) return;
+    const close = () => modal.remove();
+    const ok = h('button', { onclick: close }, 'OK');
+    const modal = h('div', { class: 'modal', onclick: e => { if (e.target === modal) close(); } },
+      h('div', { class: 'window dialog', role: 'dialog', 'aria-label': 'About' },
+        h('div', { class: 'title-bar' },
+          h('div', { class: 'title-bar-text' }, 'About'),
+          h('div', { class: 'title-bar-controls' },
+            h('button', { 'aria-label': 'Close', onclick: close }))),
+        h('div', { class: 'window-body about' },
+          h('img', { src: W.iconURL('heart', 8), alt: '', class: 'pixel' }),
+          h('p', { class: 'about-title' }, "What's Your Type?!"),
+          h('p', {}, 'MBTI for designers. v3'),
+          h('p', { class: 'hint' }, 'ID2116 · Anvii'),
+          h('div', { class: 'row end' }, ok))));
+    document.body.append(modal);
+    ok.focus();
+  }
+
+  /* ---------- DESKTOP ICONS ---------- */
+  const DESK = [
+    ['folder', 'My Types'],
+    ['floppy', 'Floppy (A:)'],
+    ['cd', 'Fonts CD'],
+    ['help', 'Help'],
+    ['trash', 'Trash'],
+  ];
+  function buildIcons() {
+    const list = $('#icons');
+    DESK.forEach(([icon, label]) => {
+      const btn = h('button', { class: 'icon' },
+        h('img', { src: W.iconURL(icon, 3), alt: '' }),
+        h('span', {}, label));
+      btn.addEventListener('click', e => {
+        e.stopPropagation();
+        list.querySelectorAll('.icon').forEach(b => b.classList.remove('selected'));
+        btn.classList.add('selected');
+        if (icon === 'help') openAbout();
+      });
+      list.append(h('li', {}, btn));
+    });
+    $('#desktop').addEventListener('click', () =>
+      list.querySelectorAll('.icon').forEach(b => b.classList.remove('selected')));
+  }
+
+  /* ---------- TASKBAR: start menu, mute, clock ---------- */
+  function closeStartMenu() {
+    $('#start-menu').hidden = true;
+    $('#start-btn').setAttribute('aria-expanded', 'false');
+  }
+  function buildTaskbar() {
+    const startBtn = $('#start-btn'), menu = $('#start-menu');
+    $('#start-icon').src = W.iconURL('heart', 3);
+
+    startBtn.addEventListener('click', e => {
+      e.stopPropagation();
+      const open = menu.hidden;
+      menu.hidden = !open;
+      startBtn.setAttribute('aria-expanded', String(open));
+    });
+    document.addEventListener('click', e => {
+      if (!menu.hidden && !menu.contains(e.target)) closeStartMenu();
+    });
+    menu.addEventListener('click', e => {
+      const action = e.target.closest('[data-action]')?.dataset.action;
+      closeStartMenu();
+      if (action === 'new') W.go('lobby');
+      if (action === 'restart') W.go('boot');
+      if (action === 'about') openAbout();
+    });
+
+    // Mute
+    const muteBtn = $('#mute-btn');
+    const renderMute = () => {
+      const m = W.sound.muted;
+      $('#mute-icon').src = W.iconURL(m ? 'speakerMuted' : 'speaker', 2);
+      muteBtn.setAttribute('aria-pressed', String(m));
+      muteBtn.setAttribute('aria-label', m ? 'Unmute' : 'Mute');
+    };
+    muteBtn.addEventListener('click', () => { W.sound.setMuted(!W.sound.muted); renderMute(); });
+    renderMute();
+
+    // Clock
+    const clock = $('#clock');
+    const tick = () => {
+      clock.textContent = new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+    };
+    tick();
+    setInterval(tick, 10000);
+  }
+
+  /* ---------- START ---------- */
+  function init() {
+    $('#boot-logo').src = W.iconURL('heart', 12);
+    $('#title-icon').src = W.iconURL('heart', 2);
+    buildIcons();
+    buildTaskbar();
+
+    $('#menu-help').addEventListener('click', openAbout);
+    // Decorative Win95 buttons just bonk
+    document.querySelectorAll('[data-bonk]').forEach(b =>
+      b.addEventListener('click', () => W.sound.play('bonk')));
+
+    // Audio may only start after a tap; every tap is a chance to unlock it
+    document.addEventListener('pointerdown', () => W.sound.unlock());
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') { closeStartMenu(); $('.modal')?.remove(); } });
+
+    // Dev shortcut: #draw, #challenge3, #card ...
+    const jump = location.hash.slice(1);
+    if (jump && jump !== 'boot' && W.screens[jump]) {
+      W.state.name = W.state.name || 'Tester';
+      W.go(jump);
+    } else {
+      W.go('boot');
+    }
+  }
+
+  init();
+})();

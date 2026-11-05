@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#000080">
+  <title>What's Your Type?!</title>
+
+  <!-- Pixel UI fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400;600&family=Silkscreen:wght@400;700&family=VT323&display=swap">
+
+  <!-- Win95 look (MIT) -->
+  <link rel="stylesheet" href="https://unpkg.com/98.css@0.1.21/dist/98.css">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body data-screen="boot">
+
+  <!-- BOOT SCREEN (full-screen overlay) -->
+  <div id="boot" class="boot" hidden>
+    <div class="boot-inner">
+      <img id="boot-logo" class="boot-logo" alt="">
+      <h1 class="boot-title">What's Your<br>Type?!</h1>
+      <p class="boot-sub">v3 · MBTI for designers</p>
+      <div id="boot-bar" class="boot-bar" role="progressbar" aria-label="Loading" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+        <div id="boot-fill" class="boot-fill"></div>
+      </div>
+      <p id="boot-status" class="boot-status">Starting up...</p>
+      <button id="boot-tap" class="boot-tap" hidden>Tap to start</button>
+    </div>
+  </div>
+
+  <!-- DESKTOP -->
+  <main id="desktop" class="desktop">
+    <ul id="icons" class="icons" aria-label="Desktop icons"></ul>
+
+    <!-- The one Paint window that hosts every screen -->
+    <section id="paint" class="window paint" aria-label="Paint">
+      <div class="title-bar">
+        <div class="title-bar-text"><img id="title-icon" class="title-icon" alt="">untitled - Paint</div>
+        <span id="title-timer" class="title-timer" hidden>0:00</span>
+        <div class="title-bar-controls">
+          <button aria-label="Minimize" data-bonk></button>
+          <button aria-label="Maximize" data-bonk></button>
+          <button aria-label="Close" data-bonk></button>
+        </div>
+      </div>
+
+      <nav class="menubar" aria-label="Menu">
+        <button data-bonk><u>F</u>ile</button>
+        <button data-bonk><u>E</u>dit</button>
+        <button data-bonk><u>V</u>iew</button>
+        <button data-bonk><u>I</u>mage</button>
+        <button id="menu-help"><u>H</u>elp</button>
+      </nav>
+
+      <div class="window-body paint-body">
+        <div id="screen" class="screen"></div>
+      </div>
+
+      <div class="status-bar">
+        <p id="status-step" class="status-bar-field">Step 0 of 9</p>
+        <p id="status-name" class="status-bar-field">Boot</p>
+        <p id="status-mode" class="status-bar-field">solo</p>
+      </div>
+    </section>
+  </main>
+
+  <!-- TASKBAR -->
+  <footer class="taskbar">
+    <button id="start-btn" class="start-btn" aria-haspopup="menu" aria-expanded="false">
+      <img id="start-icon" alt="">Start
+    </button>
+    <button class="task-btn pressed" tabindex="-1">untitled - Paint</button>
+    <div class="tray">
+      <button id="mute-btn" class="mute-btn" aria-label="Mute" aria-pressed="false"><img id="mute-icon" alt=""></button>
+      <span id="clock" class="clock">12:00</span>
+    </div>
+  </footer>
+
+  <div id="start-menu" class="window start-menu" role="menu" hidden>
+    <div class="start-side"><span>WYT 3</span></div>
+    <div class="start-items">
+      <button role="menuitem" data-action="new">New game</button>
+      <button role="menuitem" data-action="restart">Restart</button>
+      <button role="menuitem" data-action="about">About</button>
+    </div>
+  </div>
+
+  <!-- Libraries -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.11.1/p5.min.js"></script>
+
+  <!-- App (order matters: main.js last) -->
+  <script src="js/icons.js"></script>
+  <script src="js/sound.js"></script>
+  <script src="js/types.js"></script>
+  <script src="js/net.js"></script>
+  <script src="js/draw.js"></script>
+  <script src="js/challenges.js"></script>
+  <script src="js/card.js"></script>
+  <script src="js/main.js"></script>
+</body>
+</html>
