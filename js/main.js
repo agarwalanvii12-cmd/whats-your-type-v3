@@ -78,6 +78,7 @@
     $('#status-mode').textContent = W.state.mode;
 
     next.enter(el, W.state);
+    if (W.live) W.live.onEnter(name);
   };
   W.next = () => W.go(ORDER[ORDER.indexOf(current) + 1] || 'lobby');
   W.current = () => current;
@@ -156,21 +157,36 @@
 
   W.screens.lobby = {
     enter(el, state) {
+      this.el = el;
+      this.state = state;
+      this.joinOpen = !!state.joinCode;
+      this.onLive = () => { if (W.current() === 'lobby') this.render(); };
+      W.live.on(this.onLive);
+      this.render();
+    },
+    exit() { W.live.off(this.onLive); },
+
+    render() {
+      const el = this.el, state = this.state, L = W.live;
+      el.replaceChildren();
+
       const input = h('input', {
         type: 'text', id: 'player-name', maxlength: '12',
         autocomplete: 'off', enterkeyhint: 'go', placeholder: 'Your name',
         value: state.name,
       });
-      const solo = h('button', {
+      input.addEventListener('input', () => { state.name = input.value; });
+      const myName = () => (state.name = cleanName(input.value) || 'Anon');
+
+      const solo = T.magButton(h('button', {
         class: 'big',
         onclick: () => {
-          state.name = cleanName(input.value) || 'Anon';
+          myName();
           state.mode = 'solo';
           W.resetGame();
           W.go('draw');
         },
-      });
-      T.magButton(solo, 'Play solo');
+      }), 'Play solo');
       input.addEventListener('keydown', e => { if (e.key === 'Enter') solo.click(); });
 
       // Opened a friend's link before playing? Say who's waiting.
@@ -181,22 +197,129 @@
       const enterCode = W.net.loadMine() && T.magButton(
         h('button', { onclick: () => W.go('compat') }), 'Compare a code', 'enter-code');
 
-      el.append(h('div', { class: 'stack' },
+      const head = [
         invite,
         T.sticker('MBTI for designers', -4),
         T.ransom("What's your type?", 40, 'lobby'),
         T.human('draw. play. get typed.'),
-        h('div', { class: 'field' },
-          h('label', { for: 'player-name', class: 'label' }, 'Your name'),
-          input),
-        solo,
-        h('div', { class: 'row' },
-          T.magButton(h('button', { disabled: true }), 'Create room'),
-          T.magButton(h('button', { disabled: true }), 'Join room')),
-        h('p', { class: 'label muted' }, 'Rooms coming soon'),
-        enterCode,
-      ));
+      ];
+      const nameField = h('div', { class: 'field' },
+        h('label', { for: 'player-name', class: 'label' }, 'Your name'), input);
+
+      let body;
+      if (L.status !== 'idle') {
+        body = [this.roomPanel()];
+      } else if (this.joinOpen) {
+        body = [nameField, this.joinPanel(myName)];
+      } else {
+        body = [
+          nameField,
+          solo,
+          h('div', { class: 'row' },
+            T.magButton(h('button', { onclick: () => L.host(myName()) }), 'Create room', 'create'),
+            T.magButton(h('button', { onclick: () => { this.joinOpen = true; this.render(); } }), 'Join room', 'join')),
+          L.error && h('p', { class: 'label error' }, L.error),
+          enterCode,
+        ];
+      }
+      el.append(h('div', { class: 'stack' }, head, body));
     },
+
+    /* type the 4-letter room code */
+    joinPanel(myName) {
+      const state = this.state;
+      const code = h('input', {
+        type: 'text', class: 'room-input', maxlength: '4', placeholder: 'ABCD',
+        autocapitalize: 'characters', autocomplete: 'off', spellcheck: 'false',
+        'aria-label': 'Room code', value: state.joinCode || '',
+      });
+      const err = h('p', { class: 'label error' });
+      const go = () => {
+        const c = code.value.toUpperCase().replace(/[^A-Z]/g, '');
+        if (c.length !== 4) { err.textContent = 'Room codes have 4 letters'; W.sound.play('bonk'); return; }
+        state.joinCode = null;
+        W.live.join(c, myName());
+      };
+      code.addEventListener('keydown', e => { if (e.key === 'Enter') go(); });
+      setTimeout(() => code.focus(), 50);
+      return h('div', { class: 'window room-win' },
+        h('div', { class: 'title-bar' }, h('div', { class: 'title-bar-text' }, 'Join room')),
+        h('div', { class: 'window-body room-body' },
+          h('label', { class: 'label' }, 'Room code', code),
+          err,
+          T.magButton(h('button', { class: 'big', onclick: go }), 'Join', 'join-go'),
+          T.magButton(h('button', { onclick: () => { this.joinOpen = false; state.joinCode = null; this.render(); } }), 'Cancel', 'join-cancel')));
+    },
+
+    /* the room: code + QR while waiting, then both players */
+    roomPanel() {
+      const L = W.live;
+      const leave = T.magButton(h('button', { onclick: () => L.leave() }), L.connected ? 'Leave room' : 'Cancel', 'leave');
+      let inner;
+
+      if (L.status === 'hosting') {
+        const url = location.origin + location.pathname + '#r=' + L.code;
+        const qr = W.net.qrImage(url);
+        inner = [
+          T.label('Room code'),
+          T.ransom(L.code, 60, 'room' + L.code, { mixCase: false, align: 'center', level: 2 }),
+          qr && h('div', { class: 'qr' }, qr),
+          T.human(L.open ? 'waiting for a friend...' : 'opening room...'),
+          T.label('Friend taps Join room'),
+        ];
+      } else if (L.status === 'joining') {
+        inner = [T.human(`connecting to ${L.code}...`)];
+      } else {
+        const you = L.role === 'host' ? 'host' : 'guest';
+        const them = L.role === 'host' ? 'guest' : 'host';
+        inner = [
+          T.label(`Room ${L.code}`),
+          h('ul', { class: 'players' },
+            h('li', {}, h('strong', {}, L.me), ` (you, ${you})`),
+            h('li', {}, h('strong', {}, L.opp || '...'), ` (${them})`)),
+          L.role === 'host'
+            ? T.magButton(h('button', { class: 'big', disabled: !L.opp, onclick: () => L.startRound('draw') }), 'Start', 'start')
+            : T.human(`waiting for ${L.opp || 'the host'} to start.`),
+        ];
+      }
+      return h('div', { class: 'window room-win' },
+        h('div', { class: 'title-bar' }, h('div', { class: 'title-bar-text' }, 'Room')),
+        h('div', { class: 'window-body room-body' }, inner, leave));
+    },
+  };
+
+  /* ---------- WIN95 ERROR DIALOG (connection problems) ---------- */
+  W.showError = function (kind, why) {
+    document.querySelector('.modal')?.remove();
+    const close = () => modal.remove();
+    const text = {
+      connect: 'play solo now. compare by code at the end.',
+      lost: 'keep going solo. compare by code at the end.',
+      left: 'start a new room, or play solo.',
+    }[kind];
+    const buttons = kind === 'connect'
+      ? [h('button', {
+          onclick: () => {
+            close();
+            W.state.name = cleanName(W.state.name || '') || 'Anon';
+            W.state.mode = 'solo';
+            W.resetGame();
+            W.go('draw');
+          },
+        }, 'Play solo'), h('button', { onclick: close }, 'OK')]
+      : [h('button', { onclick: close }, 'OK')];
+    const modal = h('div', { class: 'modal' },
+      h('div', { class: 'window dialog', role: 'alertdialog', 'aria-label': 'Connection' },
+        h('div', { class: 'title-bar' },
+          h('div', { class: 'title-bar-text' }, 'Connection'),
+          h('div', { class: 'title-bar-controls' }, h('button', { 'aria-label': 'Close', onclick: close }))),
+        h('div', { class: 'window-body error-body' },
+          h('img', { src: W.iconURL('error', 3), alt: '', class: 'pixel' }),
+          h('div', {}, h('p', { class: 'error-why' }, why), T.human(text)),
+          h('div', { class: 'row end' }, buttons))));
+    document.body.append(modal);
+    W.sound.play('bonk');
+    modal.querySelector('.row button').focus();
   };
 
   /* ---------- PLACEHOLDERS (replaced in later steps) ---------- */
@@ -412,6 +535,15 @@
     document.addEventListener('keydown', e => { if (e.key === 'Escape') { closeStartMenu(); setPaletteOpen(false); $('.modal')?.remove(); } });
 
     // Dev shortcut: #draw, #challenge3, #card ...
+    // Opened from a room QR (#r=ABCD)? Go to the lobby with Join ready.
+    const room = location.hash.match(/^#r=([A-Za-z]{4})$/);
+    if (room) {
+      history.replaceState(null, '', location.pathname + location.search);
+      W.state.joinCode = room[1].toUpperCase();
+      W.go('lobby');
+      return;
+    }
+
     // Opened from a friend's QR / link (#c=CODE)?
     const link = location.hash.match(/^#c=([A-Za-z0-9_-]+)/);
     if (link) {

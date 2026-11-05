@@ -375,7 +375,7 @@
         const reveal = h('div', { class: 'chal-reveal', hidden: true });
         const okBtn = T.magButton(h('button', {
           class: 'big', 'data-sfx': 'none',
-          onclick: () => (phase === 'done' ? W.next() : phase === 'play' && end('done')),
+          onclick: () => (phase === 'done' ? W.advance() : phase === 'play' && end('done')),
         }), 'OK', 'ok' + c.id);
 
         el.append(h('div', { class: 'stack chal-stack' },
@@ -456,6 +456,8 @@
             T.human(r.line));
           reveal.hidden = false;
           T.magButton(okBtn, 'Next', 'next' + c.id);
+          // live room: send my answer, show theirs, and let the host move us on
+          W.live.roundDone('challenge' + c.id, result, { nextBtn: okBtn, reveal });
         }
       },
 

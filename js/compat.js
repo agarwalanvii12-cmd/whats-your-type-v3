@@ -33,6 +33,9 @@
     enter(el, state) {
       this.el = el;
       this.state = state;
+      // live room: their card can arrive a moment after mine
+      this.onLive = () => { if (this.waiting && (state.friend || !W.live.active)) this.render(); };
+      W.live.on(this.onLive);
       this.render();
     },
 
@@ -41,9 +44,21 @@
       el.replaceChildren();
       el.scrollTop = 0;
       const me = W.net.mine(state);
+      this.waiting = false;
       if (!me) return this.renderNoCard();
       if (state.friend) return this.renderMatch(me, state.friend);
+      if (W.live.active) { this.waiting = true; return this.renderWaiting(); }
       return this.renderShare(me);
+    },
+
+    /* live room: my card is done, theirs is on its way */
+    renderWaiting() {
+      const h = W.h, T = W.type;
+      this.el.append(h('div', { class: 'stack' },
+        T.sticker('Live room', -4),
+        T.ransom('Almost', 40, 'almost'),
+        T.human(`waiting for ${W.live.opp}'s card...`),
+        T.magButton(h('button', { onclick: () => { W.live.leave(); this.render(); } }), 'Compare by code', 'fallback')));
     },
 
     /* nobody on this device has played yet */
@@ -148,10 +163,17 @@
         h('div', { class: 'window axis-win' },
           h('div', { class: 'title-bar' }, h('div', { class: 'title-bar-text' }, 'Why')),
           h('div', { class: 'window-body axis-body' }, rows)),
-        T.magButton(h('button', { class: 'big', onclick: () => { state.friend = null; this.render(); } }), 'Try another code', 'another'),
-        T.magButton(h('button', { onclick: () => { state.friend = null; W.go('lobby'); } }), 'Play again', 'again')));
+        W.live.connected
+          ? [
+              T.magButton(h('button', { class: 'big', onclick: () => W.live.rematch() }), 'Rematch', 'rematch'),
+              T.magButton(h('button', { onclick: () => { W.live.leave(); state.friend = null; W.go('lobby'); } }), 'Leave room', 'leave'),
+            ]
+          : [
+              T.magButton(h('button', { class: 'big', onclick: () => { state.friend = null; this.render(); } }), 'Try another code', 'another'),
+              T.magButton(h('button', { onclick: () => { state.friend = null; W.go('lobby'); } }), 'Play again', 'again'),
+            ]));
     },
 
-    exit() {},
+    exit() { W.live.off(this.onLive); },
   };
 })();

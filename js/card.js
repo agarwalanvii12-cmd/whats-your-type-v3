@@ -274,6 +274,7 @@
       // the share code for Compare (saved on this device, so it survives a reload)
       state.share = W.net.encode({ name, code, avatar, stats });
       W.net.saveMine(state.share);
+      if (W.live.active) W.live.send({ type: 'card', share: state.share });
 
       const box = h('div', { class: 'card-box' }, h('p', { class: 'card-printing' }, 'Printing card...'));
       const dl = T.magButton(h('button', { disabled: true }), 'Download PNG', 'dl');

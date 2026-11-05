@@ -214,7 +214,7 @@
 
       const doneBtn = T.magButton(h('button', {
         class: 'big', 'data-sfx': 'none',
-        onclick: () => (phase === 'locked' ? W.next() : finish('done')),
+        onclick: () => (phase === 'locked' ? W.advance() : finish('done')),
       }), 'Done', 'draw-done');
 
       el.append(h('div', { class: 'stack draw-stack' },
@@ -360,6 +360,15 @@
           defaultFace: empty,
           undos,
         };
+
+        // live room: wait here until the host starts the next round
+        if (W.live.active) {
+          W.sound.play(why === 'time' ? 'bonk' : 'ding');
+          overlay.hidden = false;
+          overlay.replaceChildren(T.sticker(empty ? "Here's a smile" : why === 'time' ? "Time's up" : 'Done!', -6));
+          W.live.roundDone('draw', state.drawStats, { nextBtn: doneBtn });
+          return;
+        }
 
         if (empty) {
           W.sound.play(why === 'time' ? 'bonk' : 'ding');
