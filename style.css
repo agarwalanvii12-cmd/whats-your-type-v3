@@ -1,7 +1,15 @@
 /* =========================================================
    What's Your Type?! v3 · styles
-   98.css gives the Win95 bevels. This file sets fonts,
-   layout (mobile-first), the desktop, taskbar and boot.
+   98.css gives the Win95 bevels. This file sets the type
+   system, layout (mobile-first), desktop, taskbar and boot.
+
+   TYPE SYSTEM (a collage, not one font)
+   --pixel / --term   the "computer": title bars, menus, buttons,
+                      status bar, taskbar, timers
+   .ransom            big moments, built in js/type.js
+   .human             short human lines (Instrument Serif italic)
+   .label             tiny labels and stats (Space Mono caps)
+   .sticker           tilted pill / tag labels
    ========================================================= */
 
 :root {
@@ -11,13 +19,16 @@
   --pink: #f4c6d7;
   --pink-d: #e7a6bf;
   --pink-hot: #ff6fa8;
+  --paper: #f3ead3;
+  --ink: #111111;
   --taskbar-h: 44px;
   --safe-b: env(safe-area-inset-bottom, 0px);
   --safe-t: env(safe-area-inset-top, 0px);
 
-  --ui: "Pixelify Sans", system-ui, sans-serif;
   --pixel: "Silkscreen", monospace;
   --term: "VT323", monospace;
+  --mono: "Space Mono", ui-monospace, monospace;
+  --serif: "Instrument Serif", Georgia, serif;
 }
 
 * { box-sizing: border-box; }
@@ -28,28 +39,111 @@ html, body {
   overflow: hidden;
   overscroll-behavior: none;
   background: var(--pink);
-  color: #000;
-  font-family: var(--ui);
+  color: var(--ink);
+  font-family: var(--mono);
   font-size: 16px;
   -webkit-tap-highlight-color: transparent;
   -webkit-text-size-adjust: 100%;
 }
 
-/* Swap 98.css's default font for our pixel fonts, bigger for fingers */
-.window, .title-bar, button, input, label, option, select, table, textarea, ul.tree-view {
-  font-family: var(--ui);
-  font-size: 16px;
-  -webkit-font-smoothing: auto;
+/* ---------- THE COMPUTER: pixel fonts only ---------- */
+.window, .title-bar, button, option, select, table, ul.tree-view {
+  font-family: var(--pixel);
+  font-size: 14px;
+  -webkit-font-smoothing: none;
 }
-
-button { touch-action: manipulation; }
+button { touch-action: manipulation; letter-spacing: .02em; }
 
 /* Win95 title bars were flat navy */
 .title-bar { background: var(--navy); padding: 4px 4px 4px 6px; }
-.title-bar-text { font-size: 15px; font-weight: 600; letter-spacing: .3px; display: flex; align-items: center; gap: 6px; }
+.title-bar-text { font-family: var(--pixel); font-size: 13px; font-weight: 700; display: flex; align-items: center; gap: 6px; }
 .title-bar-controls button { min-width: 22px; min-height: 20px; }
 
+/* form text is human, not computer */
+input, textarea, label { font-family: var(--mono); font-size: 16px; }
+
 img.pixel, .boot-logo, .title-icon, .icon img, #start-icon, #mute-icon { image-rendering: pixelated; }
+
+/* ---------- COLLAGE TYPE ---------- */
+
+/* Ransom-note headings (tiles built in js/type.js) */
+.ransom {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: .22em .32em;
+  margin: 0;
+  padding: .12em .05em;
+  line-height: 1;
+}
+.ransom.center { justify-content: center; }
+.ransom-word { display: inline-flex; flex-wrap: nowrap; align-items: center; gap: .05em; }
+.rt {
+  display: inline-block;
+  min-width: .62em;
+  padding: .14em .13em .1em;
+  line-height: 1;
+  text-align: center;
+  transform: translateY(var(--dy, 0)) rotate(var(--r, 0deg));
+  box-shadow: 1px 1px 0 rgba(0, 0, 0, .12), 2px 4px 8px rgba(0, 0, 0, .22);
+}
+
+/* Human lines */
+.human {
+  margin: 0;
+  font-family: var(--serif);
+  font-style: italic;
+  font-size: 22px;
+  line-height: 1.15;
+}
+
+/* Tiny labels, stats, captions */
+.label {
+  margin: 0;
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.3;
+  letter-spacing: .16em;
+  text-transform: uppercase;
+}
+label.label { display: block; }
+
+/* Stickers */
+.sticker {
+  display: inline-block;
+  align-self: flex-start;
+  padding: 4px 11px 3px;
+  background: #fff;
+  color: var(--ink);
+  border: 2px solid var(--ink);
+  border-radius: 999px;
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  transform: rotate(var(--tilt, -4deg));
+  box-shadow: 2px 2px 0 var(--ink);
+}
+.sticker.tag {
+  position: relative;
+  padding-left: 22px;
+  border-radius: 4px 12px 12px 4px;
+}
+.sticker.tag::before { /* the punched hole */
+  content: "";
+  position: absolute;
+  left: 7px;
+  top: 50%;
+  width: 7px;
+  height: 7px;
+  margin-top: -3.5px;
+  border: 2px solid var(--ink);
+  border-radius: 50%;
+  background: var(--pink);
+}
 
 /* ---------- DESKTOP ---------- */
 .desktop {
@@ -81,16 +175,15 @@ img.pixel, .boot-logo, .title-icon, .icon img, #start-icon, #mute-icon { image-r
   background: none;
   border: 0;
   box-shadow: none;
-  color: #000;
-  font-family: var(--pixel);
-  font-size: 12px;
+  color: var(--ink);
+  font-size: 11px;
 }
 .icon:active { box-shadow: none; padding: 4px; }
 .icon:focus { outline: none; }
 .icon img { width: 48px; height: 48px; }
-.icon span { margin-top: 4px; padding: 1px 3px; text-align: center; line-height: 1.2; }
+.icon span { margin-top: 4px; padding: 1px 3px; text-align: center; line-height: 1.25; }
 .icon.selected span { background: var(--navy); color: #fff; outline: 1px dotted #fff; }
-.icon.selected img { filter: drop-shadow(0 0 0 var(--navy)) brightness(.7) sepia(1) hue-rotate(190deg) saturate(4); }
+.icon.selected img { filter: brightness(.7) sepia(1) hue-rotate(190deg) saturate(4); }
 
 /* ---------- PAINT WINDOW ---------- */
 .paint {
@@ -116,18 +209,19 @@ img.pixel, .boot-logo, .title-icon, .icon img, #start-icon, #mute-icon { image-r
 .menubar {
   display: flex;
   gap: 2px;
-  padding: 2px 2px 3px;
+  padding: 1px 2px 2px;
   overflow: hidden;
 }
 .menubar button {
   min-width: 0;
   min-height: 0;
-  padding: 2px 8px;
+  padding: 0 8px;
   background: none;
   box-shadow: none;
-  font-size: 15px;
+  font-family: var(--term);
+  font-size: 20px;
 }
-.menubar button:active { box-shadow: inset -1px -1px #fff, inset 1px 1px #808080; padding: 2px 8px; }
+.menubar button:active { box-shadow: inset -1px -1px #fff, inset 1px 1px #808080; padding: 0 8px; }
 .menubar button:focus { outline: none; }
 
 /* Grey Paint workspace with a white "canvas" that holds each screen */
@@ -143,60 +237,48 @@ img.pixel, .boot-logo, .title-icon, .icon img, #start-icon, #mute-icon { image-r
 .screen {
   flex: 1;
   min-height: 0;
+  overflow-x: hidden;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
+  container-type: inline-size;   /* ransom headings shrink to fit this */
   background: #fff;
   box-shadow: 3px 3px 0 #404040;
 }
 
 .status-bar { margin: 3px; }
-.status-bar-field { font-size: 14px; padding: 2px 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.status-bar-field { font-family: var(--term); font-size: 18px; line-height: 1; padding: 2px 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
 /* ---------- SCREEN CONTENT ---------- */
 .stack {
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 16px;
   max-width: 420px;
   margin: 0 auto;
-  padding: 18px 16px 24px;
-}
-.kicker {
-  margin: 0;
-  font-family: var(--term);
-  font-size: 20px;
-  color: var(--grey-d);
-}
-.screen-title {
-  margin: 0;
-  font-family: var(--pixel);
-  font-size: 24px;
-  line-height: 1.1;
-}
-.hint {
-  margin: 0;
-  font-family: var(--term);
-  font-size: 20px;
-  color: #444;
+  padding: 20px 18px 26px;
 }
 .row { display: flex; gap: 10px; }
 .row > * { flex: 1; }
 .row.end { justify-content: flex-end; }
 .row.end > * { flex: 0 0 auto; }
 
-button.big { min-height: 48px; font-size: 18px; font-weight: 600; }
-.row button { min-height: 44px; }
-.field-row-stacked label { font-size: 16px; }
-input[type="text"] { height: 42px; font-size: 18px; padding: 4px 8px; }
+button.big { min-height: 50px; font-size: 16px; font-weight: 700; }
+.row button { min-height: 44px; font-size: 13px; }
+.field { display: flex; flex-direction: column; gap: 6px; }
+input[type="text"] { height: 44px; padding: 4px 10px; font-size: 18px; }
+.muted { color: var(--grey-d); }
 
 .placeholder {
-  display: grid;
-  place-items: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
   aspect-ratio: 1;
+  padding: 16px;
   border: 2px dashed var(--grey-d);
-  font-family: var(--term);
-  font-size: 22px;
   color: var(--grey-d);
+  text-align: center;
 }
 
 /* ---------- TASKBAR ---------- */
@@ -220,7 +302,7 @@ input[type="text"] { height: 42px; font-size: 18px; padding: 4px 8px; }
   gap: 6px;
   min-width: 0;
   padding: 0 10px;
-  font-weight: 600;
+  font-weight: 700;
 }
 .start-btn img { width: 21px; height: 18px; }
 .task-btn {
@@ -231,7 +313,8 @@ input[type="text"] { height: 42px; font-size: 18px; padding: 4px 8px; }
   text-align: left;
   white-space: nowrap;
   text-overflow: ellipsis;
-  font-size: 14px;
+  font-family: var(--term);
+  font-size: 19px;
 }
 .pressed, .start-btn[aria-expanded="true"] {
   box-shadow: inset -1px -1px #fff, inset 1px 1px #0a0a0a, inset -2px -2px #dfdfdf, inset 2px 2px #808080;
@@ -294,7 +377,7 @@ input[type="text"] { height: 42px; font-size: 18px; padding: 4px 8px; }
   text-align: left;
   background: none;
   box-shadow: none;
-  font-size: 17px;
+  font-size: 14px;
 }
 .start-items button:hover, .start-items button:focus-visible { background: var(--navy); color: #fff; outline: none; }
 
@@ -308,10 +391,8 @@ input[type="text"] { height: 42px; font-size: 18px; padding: 4px 8px; }
   padding: 16px;
 }
 .dialog { width: min(320px, 100%); }
-.about { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 14px; text-align: center; }
-.about p { margin: 0; }
-.about .row { align-self: stretch; margin-top: 8px; }
-.about-title { font-family: var(--pixel); font-size: 18px; }
+.about { display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 16px; text-align: center; }
+.about .row { align-self: stretch; margin-top: 4px; }
 
 /* ---------- BOOT ---------- */
 .boot {
@@ -328,20 +409,17 @@ input[type="text"] { height: 42px; font-size: 18px; padding: 4px 8px; }
   cursor: pointer;
 }
 .boot[hidden] { display: none; }
-.boot-logo { width: 84px; height: 72px; }
-.boot-title {
-  margin: 14px 0 6px;
-  font-family: var(--pixel);
-  font-size: clamp(32px, 10vw, 54px);
-  line-height: 1.05;
-  color: var(--pink);
-  text-shadow: 4px 4px 0 var(--navy);
-}
-.boot-sub { margin: 0 0 28px; font-family: var(--term); font-size: 22px; color: var(--grey); }
+.boot-inner { display: flex; flex-direction: column; align-items: center; width: 100%; max-width: 420px; }
+.boot-logo { width: 63px; height: 54px; }
+.boot-title { position: relative; margin: 22px 0 14px; padding: 0 6px; }
+.boot-title .ransom { font-size: 46px; }
+.boot-title .sticker { position: absolute; z-index: 2; }
+.boot-title .sticker.s1 { top: -14px; right: -4px; }
+.boot-title .sticker.s2 { bottom: -18px; left: 2px; }
+.boot-sub { margin: 18px 0 30px; font-size: 26px; color: var(--pink); }
 .boot-bar {
   width: min(280px, 78vw);
   height: 24px;
-  margin: 0 auto;
   padding: 3px;
   border: 2px solid var(--grey);
 }
@@ -358,8 +436,7 @@ input[type="text"] { height: 42px; font-size: 18px; padding: 4px 8px; }
   background: none;
   box-shadow: none;
   color: #fff;
-  font-family: var(--pixel);
-  font-size: 18px;
+  font-size: 16px;
   animation: blink 1s steps(1) infinite;
 }
 .boot-tap:active { box-shadow: none; padding: 10px 16px; }

@@ -13,6 +13,7 @@
 (function () {
   'use strict';
   const W = (window.WYT = window.WYT || {});
+  const T = W.type; // ransom, sticker, human, label (js/type.js)
   const $ = sel => document.querySelector(sel);
 
   const ORDER = [
@@ -97,6 +98,15 @@
     'Warming up CRT...', 'Mixing palette...', 'Ready.',
   ];
 
+  function buildBootTitle() {
+    const box = $('#boot-title');
+    box.replaceChildren(
+      T.ransom("What's your type?!", 46, 'boot', { dark: true, align: 'center' }),
+      Object.assign(T.sticker('v3', 8), { className: 'sticker pill s1' }),
+      Object.assign(T.sticker('2 players', -6, 'tag'), { className: 'sticker tag s2' }),
+    );
+  }
+
   W.screens.boot = {
     enter() {
       const boot = $('#boot'), fill = $('#boot-fill'), bar = $('#boot-bar');
@@ -159,28 +169,30 @@
       input.addEventListener('keydown', e => { if (e.key === 'Enter') solo.click(); });
 
       el.append(h('div', { class: 'stack' },
-        h('p', { class: 'kicker' }, 'MBTI for designers'),
-        h('h1', { class: 'screen-title' }, "What's your type?"),
-        h('div', { class: 'field-row-stacked' },
-          h('label', { for: 'player-name' }, 'Your name'),
+        T.sticker('MBTI for designers', -4),
+        T.ransom("What's your type?", 40, 'lobby'),
+        T.human('draw. play. get typed.'),
+        h('div', { class: 'field' },
+          h('label', { for: 'player-name', class: 'label' }, 'Your name'),
           input),
         solo,
         h('div', { class: 'row' },
           h('button', { disabled: true }, 'Create room'),
           h('button', { disabled: true }, 'Join room')),
-        h('p', { class: 'hint' }, 'Rooms coming soon'),
+        h('p', { class: 'label muted' }, 'Rooms coming soon'),
       ));
     },
   };
 
   /* ---------- PLACEHOLDERS (replaced in later steps) ---------- */
-  function placeholder({ kicker, title, box, button, onNext }) {
+  function placeholder({ tag, tilt = -4, title, quip, box, button, onNext }) {
     return {
       enter(el) {
         el.append(h('div', { class: 'stack' },
-          h('p', { class: 'kicker' }, kicker),
-          h('h1', { class: 'screen-title' }, title),
-          h('div', { class: 'placeholder' }, box),
+          T.sticker(tag, tilt),
+          T.ransom(title, 40, title),
+          quip && T.human(quip),
+          h('div', { class: 'placeholder' }, box()),
           h('button', { class: 'big', onclick: onNext || (() => W.next()) }, button),
         ));
       },
@@ -188,17 +200,24 @@
   }
 
   const fallbacks = {
-    draw: placeholder({ kicker: '15 seconds', title: 'Draw yourself', box: 'canvas soon', button: 'Done' }),
-    card: placeholder({ kicker: 'Your result', title: 'Type Card', box: 'card soon', button: 'Compare' }),
+    draw: placeholder({
+      tag: '15 seconds', title: 'Draw yourself', quip: 'you are the mascot.',
+      box: () => T.label('24 × 24 canvas soon'), button: 'Done',
+    }),
+    card: placeholder({
+      tag: 'Your result', tilt: 3, title: 'Type card', quip: 'who are you, really?',
+      box: () => [T.ransom('????', 64, 'code', { mixCase: false, align: 'center', level: 2 }), T.label('Type code')],
+      button: 'Compare',
+    }),
     compat: placeholder({
-      kicker: 'You × friend', title: 'Compatibility', box: 'match soon',
-      button: 'Play again', onNext: () => W.go('lobby'),
+      tag: 'You × friend', tilt: 3, title: 'Compatibility', quip: 'a classic pairing?',
+      box: () => T.label('% match soon'), button: 'Play again', onNext: () => W.go('lobby'),
     }),
   };
   W.CHALLENGES.forEach(c => {
     fallbacks['challenge' + c.id] = placeholder({
-      kicker: `Challenge ${c.id} of 5 · ${c.time}s`,
-      title: c.name, box: c.hint, button: 'OK',
+      tag: `Challenge ${c.id}/5 · ${c.time}s`, tilt: c.id % 2 ? -4 : 3,
+      title: c.name, quip: c.quip, box: () => T.label(c.hint), button: 'OK',
     });
   });
   for (const [name, scr] of Object.entries(fallbacks)) {
@@ -218,9 +237,9 @@
             h('button', { 'aria-label': 'Close', onclick: close }))),
         h('div', { class: 'window-body about' },
           h('img', { src: W.iconURL('heart', 8), alt: '', class: 'pixel' }),
-          h('p', { class: 'about-title' }, "What's Your Type?!"),
-          h('p', {}, 'MBTI for designers. v3'),
-          h('p', { class: 'hint' }, 'ID2116 · Anvii'),
+          T.ransom("What's your type?!", 22, 'about', { align: 'center', level: 2 }),
+          T.human('MBTI, but for designers.'),
+          T.sticker('ID2116 · Anvii', -3),
           h('div', { class: 'row end' }, ok))));
     document.body.append(modal);
     ok.focus();
@@ -300,8 +319,9 @@
 
   /* ---------- START ---------- */
   function init() {
-    $('#boot-logo').src = W.iconURL('heart', 12);
+    $('#boot-logo').src = W.iconURL('heart', 9);
     $('#title-icon').src = W.iconURL('heart', 2);
+    buildBootTitle();
     buildIcons();
     buildTaskbar();
 
