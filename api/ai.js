@@ -97,13 +97,13 @@ function buildPrompt(body) {
     return (
       'Write 10 quick this-or-that questions for a designer personality quiz played by ' +
       'design students at a showcase. Gen Z tone, funny, about studio life, crits, Figma, ' +
-      'moodboards, deadlines, group projects. 2 questions for each of these 5 scales, in this order: ' +
-      TRAITS.map((t, i) => `${i + 1}) ${t[0]} vs ${t[1]}`).join('; ') + '. ' +
-      'Each question: max 34 characters. Each answer: max 30 characters. ' +
-      'Reply with JSON only, exactly this shape (5 pairs, in the order above, each answer list = ' +
-      '[question, answer leaning to the FIRST end, answer leaning to the SECOND end]): ' +
-      '{"questions":[[["Crit day. You...","pray they skip you","volunteer first"],["...","...","..."]],' +
-      '[[...],[...]],[[...],[...]],[[...],[...]],[[...],[...]]]}'
+      'moodboards, deadlines, group projects. Write 2 new questions for each of these 5 scales: ' +
+      TRAITS.map((t, i) => `scale ${i + 1} = ${t[0]} (low) vs ${t[1]} (high)`).join('; ') + '. ' +
+      'For every question, "low" is an answer only a ' + 'LOW-end person would pick and "high" is an answer ' +
+      'only a HIGH-end person would pick: they must point in opposite directions on that scale. ' +
+      'Question: max 34 characters. Each answer: max 30 characters. Never use placeholders like "...". ' +
+      'Reply with JSON only: {"questions": [ {"scale": 1, "question": string, "low": string, "high": string}, ' +
+      '... 10 objects, 2 per scale ] }'
     );
   }
   return bad('kind');
@@ -129,8 +129,11 @@ function cleanQuestions(raw) {
   if (!Array.isArray(list)) bad('shape');
   // a scale written as an object holding its questions → just the questions
   list = list.map(p => (p && !Array.isArray(p) && typeof p === 'object' && !triple(p) ? Object.values(p).find(Array.isArray) || p : p));
-  // 10 single questions in a row → 5 pairs
-  if (list.length === 10 && list.every(q => triple(q))) list = [0, 1, 2, 3, 4].map(i => [list[2 * i], list[2 * i + 1]]);
+  // 10 single questions: group by their "scale" number if they have one, else in order
+  if (list.length === 10 && list.every(q => triple(q))) {
+    const byScale = [1, 2, 3, 4, 5].map(n => list.filter(q => q && Number(q.scale) === n));
+    list = byScale.every(g => g.length === 2) ? byScale : [0, 1, 2, 3, 4].map(i => [list[2 * i], list[2 * i + 1]]);
+  }
   if (list.length !== 5) bad('shape');
   return list.map(pair => {
     if (!Array.isArray(pair) || pair.length < 2) bad('shape');
@@ -138,7 +141,9 @@ function cleanQuestions(raw) {
       const t = triple(q);
       if (!t) bad('shape');
       const out = t.map(tidy);
-      if (out.some(x => !x)) bad('empty');
+      // no empty strings, no "..." placeholders, and the two answers must differ
+      if (out.some(x => !x || /^[\s.\u2026]*$/.test(x) || /\.\.\.$/.test(x) && x.length < 6)) bad('empty');
+      if (out[1].toLowerCase() === out[2].toLowerCase()) bad('same');
       return out;
     });
   });
