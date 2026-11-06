@@ -779,14 +779,40 @@ input[type="range"]::-moz-range-thumb {
   text-align: center;
 }
 
+/* the typewriter typing your reading */
+.tw-wrap { position: relative; display: flex; flex-direction: column; align-items: center; padding-top: 12px; }
+.tw-wrap > .sticker { position: absolute; top: 0; left: 6px; z-index: 3; background: #ffd23f; font-size: 13px; }
+.tw-paper {
+  position: relative;
+  z-index: 1;
+  width: min(300px, 92%);
+  min-height: 120px;
+  margin-bottom: -38px;   /* the sheet feeds into the typewriter */
+  padding: 30px 16px 48px;
+  background: #fbefd0;
+  background-image: repeating-linear-gradient(to bottom, transparent 0 25px, rgba(150, 120, 60, .18) 25px 26px);
+  border: 2px solid var(--ink);
+  box-shadow: 4px 4px 0 rgba(0, 0, 0, .25);
+}
+.tw-text { margin: 0; font-family: "Special Elite", var(--mono); font-size: 16px; line-height: 26px; color: #2b2118; }
+.tw-wait { animation: blink 1s steps(1) infinite; }
+.tw-wrap .mascot { position: relative; z-index: 2; }
+.tw-wrap .tw-img { width: 150px; }
+.tw-wrap .note-tag { display: block; margin-top: 8px; padding: 0; text-align: right; }
+
 /* "typeface" that keeps switching fonts */
-.cycle-font { display: inline-block; min-width: 4.6em; font-style: normal; color: var(--navy); text-align: left; }
+/* two lines; the second has a fixed height so the switching fonts never push anything down */
+.pun-1, .pun-2 { display: block; }
+.pun-2 { height: 1.35em; line-height: 1.35em; white-space: nowrap; overflow: visible; }
+.cycle-font { display: inline-block; min-width: 4.6em; height: 1.35em; line-height: 1.35em; font-style: normal; color: var(--navy); text-align: left; vertical-align: top; }
 .boot .cycle-font { color: #fff; }
 
 /* ---------- KERN (mascot), CARD WALL, AI READING ---------- */
 .mascot { display: flex; align-items: center; gap: 10px; }
-.point-img { flex: none; width: 66px; height: auto; image-rendering: pixelated; animation: point-hover 1.56s steps(3) infinite; }
-@keyframes point-hover { 33% { transform: translate(2px, -3px) rotate(-4deg); } 66% { transform: translate(-1px, -1px) rotate(2deg); } }
+.tw-img { flex: none; width: 66px; height: auto; image-rendering: pixelated; animation: tw-bob 1.3s steps(2) infinite; }
+.typing .tw-img { animation: tw-clack .16s steps(2) infinite; }
+@keyframes tw-bob { 50% { transform: translateY(-2px); } }
+@keyframes tw-clack { 50% { transform: translate(1px, 1px); } }
 .kern-say {
   position: relative;
   margin: 0;
@@ -812,7 +838,7 @@ input[type="range"]::-moz-range-thumb {
   transform: rotate(45deg);
 }
 .lobby-intro { display: flex; flex-direction: column; gap: 6px; }
-.lobby-intro .point-img { width: 50px; }
+.lobby-intro .tw-img { width: 56px; }
 .lobby-intro .kern-say { font-size: 12px; padding: 5px 9px; }
 .lobby-intro .human { font-size: 22px; }
 .how { gap: 4px; padding: 8px 12px; }
@@ -1129,7 +1155,7 @@ input[type="range"]::-moz-range-thumb {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .point-img,
+  .tw-img,
   .boot-tap, .card-img, .sparkles img, .ransom.drop .rt, .boot-logo.pulse, #screen.swap-in,
   .attract-card.in, .attract-tap, .boot-status::after { animation: none; }
   .sparkles img { opacity: .8; }

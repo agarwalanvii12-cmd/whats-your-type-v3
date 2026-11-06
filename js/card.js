@@ -302,14 +302,30 @@
 
       // ask for the AI reading straight away, while the card prints
       const reading = W.ai.reading(name, result);
-      const noteText = h('p', { class: 'note-text' }, 'reading your personality...');
+      // Remi the typewriter types your reading onto a sheet of paper
+      const noteText = h('p', { class: 'tw-text' }, h('span', { class: 'tw-wait' }, 'reading your personality'), h('span', { class: 'caret' }));
       const noteTag = h('span', { class: 'label note-tag' });
       const noteSticker = T.sticker('Your AI reading', -5);
-      const note = h('div', { class: 'note-wrap' },
+      const remi = W.mascot(null, 5);
+      const note = h('div', { class: 'tw-wrap' },
         noteSticker,
-        h('div', { class: 'window note-win' },
-          h('div', { class: 'title-bar' }, h('div', { class: 'title-bar-text' }, 'reading.txt - Notepad')),
-          h('div', { class: 'window-body note-body' }, noteText, noteTag)));
+        h('div', { class: 'tw-paper' }, noteText, noteTag),
+        remi);
+      const typeReading = (text, done) => {
+        let i = 0;
+        remi.classList.add('typing');
+        const step = () => {
+          if (this.token !== token) return;
+          i++;
+          noteText.replaceChildren(text.slice(0, i), h('span', { class: 'caret' }));
+          if (i % 4 === 0) W.sound.play('tick');
+          if (i < text.length) { this.typing = setTimeout(step, 38); return; }
+          remi.classList.remove('typing');
+          W.sound.play('ding'); // the typewriter bell
+          done();
+        };
+        step();
+      };
 
       // pin to the Card Wall (opt-in): your card then shows in the screensaver
       const pinMsg = h('span', { class: 'label pin-msg', 'aria-live': 'polite' });
@@ -334,7 +350,6 @@
         T.sticker('You are', -4),
         title,
         T.human(type.line),
-        W.mascot('told you. that is SO your type.'),
         note,
         T.label('Your personality picked these fonts'),
         box,
@@ -356,9 +371,10 @@
         state.card = { name, traits, result, dataURL: card.dataURL };
         reading.then(r => {
           if (this.token !== token) return;
-          W.fx.typeOut(noteText, r.text, 22);
-          noteTag.textContent = r.ai ? 'Written by AI just for you' : 'Offline reading';
           if (!r.ai) noteSticker.textContent = 'Your reading';
+          typeReading(r.text, () => {
+            noteTag.textContent = r.ai ? 'Typed by Remi with AI, just for you' : 'Offline reading';
+          });
           state.card.reading = r.text;
         });
         const file = `whats-your-type-${shortName(type).replace(/\s+/g, '-')}-${name.replace(/[^a-z0-9]+/gi, '-')}.png`;
@@ -366,6 +382,6 @@
         dl.addEventListener('click', () => W.downloadCard(card, file));
       });
     },
-    exit() { this.token = null; },
+    exit() { this.token = null; clearTimeout(this.typing); },
   };
 })();

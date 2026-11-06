@@ -204,22 +204,26 @@
     },
   };
 
-  /* ---------- POINT, the mascot ----------
-     A 3D lavender pixel cursor with a face, burning with pixel flames.
-     The flames flicker and Point blinks now and then.
-     W.mascot('text') → element with Point + a speech bubble. */
-  const POINT_FRAMES = ['point1', 'point2', 'point1', 'point2', 'point1', 'point3'];
-  let pointStep = 0;
+  /* ---------- REMI, the mascot ----------
+     A pixel typewriter with a face. Idles (blinks, taps a key now and
+     then); while typing (class "typing" on .mascot) the keys clack fast.
+     W.mascot('text') → element with Remi + a speech bubble. */
+  const IDLE = ['tw1', 'tw1', 'tw1', 'tw1', 'tw3', 'tw1', 'tw1', 'tw1', 'tw2', 'tw1', 'tw1', 'tw4'];
+  let twTick = 0;
   setInterval(() => {
     if (calm()) return;
-    pointStep = (pointStep + 1) % POINT_FRAMES.length;
-    const src = W.iconURL(POINT_FRAMES[pointStep], 3);
-    document.querySelectorAll('.point-img').forEach(img => { img.src = src; });
-  }, 260);
-  W.mascot = function (say) {
+    twTick++;
+    document.querySelectorAll('.tw-img').forEach(img => {
+      const typing = img.closest('.typing');
+      const name = typing ? (twTick % 2 ? 'tw2' : 'tw4') : IDLE[Math.floor(twTick / 2) % IDLE.length];
+      const src = W.iconURL(name, img.dataset.scale || 3);
+      if (img.getAttribute('src') !== src) img.src = src;
+    });
+  }, 130);
+  W.mascot = function (say, scale = 3) {
     const h = W.h;
     return h('div', { class: 'mascot' },
-      h('img', { class: 'point-img', src: W.iconURL('point1', 3), alt: 'Point, a pixel cursor on fire' }),
+      h('img', { class: 'tw-img', src: W.iconURL('tw1', scale), 'data-scale': scale, alt: 'Remi, a pixel typewriter with a smile' }),
       say && h('p', { class: 'kern-say' }, say));
   };
 
