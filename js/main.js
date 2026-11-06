@@ -213,7 +213,7 @@
         h('div', { class: 'lobby-intro' },
           W.mascot("hi, i'm Point. i'll point you to your type."),
           h('div', {},
-            T.human('not your dating type. your typeface.'),
+            h('p', { class: 'human' }, 'not your dating type lol, your ', h('span', { class: 'cycle-font' }, 'typeface'), '!'),
             T.label('Find your design personality + fonts'))),
         L.status === 'idle' && howItWorks(),
       ];

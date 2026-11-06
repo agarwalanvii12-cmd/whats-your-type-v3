@@ -779,6 +779,10 @@ input[type="range"]::-moz-range-thumb {
   text-align: center;
 }
 
+/* "typeface" that keeps switching fonts */
+.cycle-font { display: inline-block; min-width: 4.6em; font-style: normal; color: var(--navy); text-align: center; }
+.boot .cycle-font { color: #fff; }
+
 /* ---------- KERN (mascot), CARD WALL, AI READING ---------- */
 .mascot { display: flex; align-items: center; gap: 10px; }
 .point-img { flex: none; width: 66px; height: auto; image-rendering: pixelated; animation: point-hover 1.56s steps(3) infinite; }

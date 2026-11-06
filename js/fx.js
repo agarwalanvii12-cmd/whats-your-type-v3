@@ -223,6 +223,18 @@
       say && h('p', { class: 'kern-say' }, say));
   };
 
+  /* "typeface" keeps changing typeface: cycles through the 18 type fonts */
+  let faceStep = 0;
+  setInterval(() => {
+    if (calm() || !W.FONTS) return;
+    faceStep = (faceStep + 1) % W.FONTS.length;
+    const f = W.FONTS[faceStep];
+    document.querySelectorAll('.cycle-font').forEach(el => {
+      el.style.fontFamily = `"${f.font}"`;
+      el.style.fontWeight = f.weight;
+    });
+  }, 650);
+
   W.fx = {
     shake, burst, pixelReveal, typeOut, attract,
     init() { cursors(); sparkles(); attract.init(); },
