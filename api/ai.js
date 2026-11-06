@@ -100,23 +100,44 @@ function buildPrompt(body) {
       'moodboards, deadlines, group projects. 2 questions for each of these 5 scales, in this order: ' +
       TRAITS.map((t, i) => `${i + 1}) ${t[0]} vs ${t[1]}`).join('; ') + '. ' +
       'Each question: max 34 characters. Each answer: max 30 characters. ' +
-      'Reply as JSON only: {"questions":[[["question","answer for the FIRST end","answer for the SECOND end"],' +
-      '[...]], ...5 pairs]}.'
+      'Reply with JSON only, exactly this shape (5 pairs, in the order above, each answer list = ' +
+      '[question, answer leaning to the FIRST end, answer leaning to the SECOND end]): ' +
+      '{"questions":[[["Crit day. You...","pray they skip you","volunteer first"],["...","...","..."]],' +
+      '[[...],[...]],[[...],[...]],[[...],[...]],[[...],[...]]]}'
     );
   }
   return bad('kind');
 }
 
-/* the questions come back as JSON: check the shape and clean every string */
+/* The questions come back as JSON. Models vary the layout a bit, so accept the
+   common shapes, then check everything and clean every string. */
 function cleanQuestions(raw) {
-  const tidy = v => String(v || '').replace(/\s*[\u2014\u2013]\s*/g, ', ').replace(/\s+/g, ' ').trim().slice(0, 60);
-  const qs = JSON.parse(raw).questions;
-  if (!Array.isArray(qs) || qs.length !== 5) bad('shape');
-  return qs.map(pair => {
+  const tidy = v => String(v || '').replace(/\s*[—–]\s*/g, ', ').replace(/\s+/g, ' ').trim().slice(0, 60);
+  // one question → [question, first answer, second answer]
+  const triple = q => {
+    if (Array.isArray(q)) return q.length >= 3 ? q.slice(0, 3) : null;
+    if (q && typeof q === 'object') {
+      const text = q.question || q.q || q.text || q.prompt;
+      const answers = q.answers || q.options || q.choices ||
+        [q.first || q.a || q.low || q.left || q.option1, q.second || q.b || q.high || q.right || q.option2];
+      if (text && Array.isArray(answers) && answers.length >= 2) return [text, answers[0], answers[1]];
+    }
+    return null;
+  };
+  const parsed = JSON.parse(raw);
+  let list = Array.isArray(parsed) ? parsed : parsed.questions || Object.values(parsed).find(Array.isArray);
+  if (!Array.isArray(list)) bad('shape');
+  // a scale written as an object holding its questions → just the questions
+  list = list.map(p => (p && !Array.isArray(p) && typeof p === 'object' && !triple(p) ? Object.values(p).find(Array.isArray) || p : p));
+  // 10 single questions in a row → 5 pairs
+  if (list.length === 10 && list.every(q => triple(q))) list = [0, 1, 2, 3, 4].map(i => [list[2 * i], list[2 * i + 1]]);
+  if (list.length !== 5) bad('shape');
+  return list.map(pair => {
     if (!Array.isArray(pair) || pair.length < 2) bad('shape');
     return pair.slice(0, 2).map(q => {
-      if (!Array.isArray(q) || q.length < 3) bad('shape');
-      const out = q.slice(0, 3).map(tidy);
+      const t = triple(q);
+      if (!t) bad('shape');
+      const out = t.map(tidy);
       if (out.some(x => !x)) bad('empty');
       return out;
     });
@@ -202,3 +223,4 @@ module.exports = async function handler(req, res) {
 
 // exported for local tests
 module.exports.buildPrompt = buildPrompt;
+module.exports.cleanQuestions = cleanQuestions;
