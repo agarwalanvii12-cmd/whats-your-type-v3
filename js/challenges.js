@@ -464,12 +464,13 @@
             const pick = v => { if (phase !== 'ask') return; answers.push(v); askNext(); };
             const options = [[q[1], 0], [q[2], 1]];
             if (Math.random() < 0.5) options.reverse();
-            ask.replaceChildren(
+            ask.replaceChildren(...[ // (skip empty bits, or they'd print as "false")
               why === 'time' && answers.length === 0 && T.sticker("Time's up", -6),
               T.label(`Quick question ${answers.length + 1}/2 · no wrong answers`),
               T.human(q[0]),
               h('div', { class: 'ask-options' },
-                options.map(([text, v]) => h('button', { class: 'ask-btn', onclick: () => pick(v) }, text))));
+                options.map(([text, v]) => h('button', { class: 'ask-btn', onclick: () => pick(v) }, text))),
+            ].filter(Boolean));
             ask.hidden = false;
           };
           askNext();
@@ -482,12 +483,13 @@
             state.results[c.id] = result;
 
             const word = W.traitWord(i, result.trait);
-            reveal.replaceChildren(
+            reveal.replaceChildren(...[ // (skip empty bits, or they'd print as "undefined")
               T.label(W.TRAITS[i].name),
               T.ransom(word, 52, 'reveal' + c.id + word, { align: 'center', level: 2 }),
               spectrum(i, result.trait),
               T.human(W.traitLine(i, result.trait)),
-              c.detail && T.label(c.detail(result)));
+              c.detail && T.label(c.detail(result)),
+            ].filter(Boolean));
             reveal.hidden = false;
             okBtn.disabled = false;
             T.magButton(okBtn, 'Next', 'next' + c.id);
