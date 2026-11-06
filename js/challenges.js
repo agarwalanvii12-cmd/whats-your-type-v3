@@ -92,7 +92,8 @@
       const poster = h('div', { class: 'read-poster' });
       const tray = h('div', { class: 'read-tray' });
       const reset = h('button', { class: 'read-reset', onclick: () => { if (api.active) { d.order = []; render(); } } }, 'Reset');
-      stage.append(poster, tray, reset);
+      // buttons first, so they never move while the poster grows underneath
+      stage.append(tray, poster, reset);
 
       const render = () => {
         poster.replaceChildren(...[0, 1, 2].map(slot => {
@@ -373,10 +374,20 @@
         const stage = h('div', { class: 'chal-stage waiting' });
         const count = h('div', { class: 'chal-count' });
         const reveal = h('div', { class: 'chal-reveal', hidden: true });
-        const ask = h('div', { class: 'chal-ask', hidden: true });
+        // the quick questions pop up as a Win95 window pinned to the bottom of
+        // the screen (on <body>), so they can never be hidden or scrolled away
+        const ask = h('div', { class: 'window ask-sheet', role: 'dialog', 'aria-label': 'Quick question' });
+        this.ask = ask;
         const okBtn = T.magButton(h('button', {
           class: 'big', 'data-sfx': 'none',
-          onclick: () => (phase === 'done' ? W.advance() : phase === 'play' && end('done')),
+          onclick: () => {
+            if (phase === 'done') W.advance();
+            else if (phase === 'play') end('done');
+            else if (phase === 'ask') { // safety net: bring the question back into view
+              if (!ask.isConnected) document.body.append(ask);
+              ask.classList.remove('nudge'); void ask.offsetWidth; ask.classList.add('nudge');
+            }
+          },
         }), 'OK', 'ok' + c.id);
 
         el.append(h('div', { class: 'stack chal-stack' },
@@ -391,7 +402,7 @@
               h('div', { class: 'title-bar-controls' }, h('button', { 'aria-label': 'Help', 'data-bonk': true }))),
             h('div', { class: 'window-body chal-body' },
               h('p', { class: 'chal-hint' }, c.hint),
-              h('div', { class: 'chal-wrap' }, stage, count, ask, reveal))),
+              h('div', { class: 'chal-wrap' }, stage, count, reveal))),
           h('div', { class: 'actions' }, okBtn)));
 
         api = {
@@ -417,6 +428,9 @@
           clearInterval(countTimer);
           count.remove();
           stage.classList.remove('waiting');
+          // small phones: bring the playable part into view
+          const win = stage.closest('.chal-win');
+          if (win && win.getBoundingClientRect().bottom > window.innerHeight - 140) win.scrollIntoView({ block: 'start' }); // instant, so taps don't land mid-scroll
           phase = 'play';
           startAt = performance.now();
           endAt = startAt + c.time * 1000;
@@ -455,23 +469,25 @@
           if (why === 'time') W.fx.shake();
 
           // 2 quick questions, then the trait reveal
-          okBtn.disabled = true;
-          T.magButton(okBtn, 'Pick one', 'pick' + c.id);
+          T.magButton(okBtn, 'Answer the question', 'pick' + c.id);
           const answers = [];
           const askNext = () => {
             const q = questionsFor(state, c.trait)[answers.length];
-            if (!q) { ask.hidden = true; finish(); return; }
+            if (!q) { ask.remove(); finish(); return; }
             const pick = v => { if (phase !== 'ask') return; answers.push(v); askNext(); };
             const options = [[q[1], 0], [q[2], 1]];
             if (Math.random() < 0.5) options.reverse();
-            ask.replaceChildren(...[ // (skip empty bits, or they'd print as "false")
-              why === 'time' && answers.length === 0 && T.sticker("Time's up", -6),
-              T.label(`Quick question ${answers.length + 1}/2 · no wrong answers`),
-              T.human(q[0]),
-              h('div', { class: 'ask-options' },
-                options.map(([text, v]) => h('button', { class: 'ask-btn', onclick: () => pick(v) }, text))),
-            ].filter(Boolean));
-            ask.hidden = false;
+            ask.replaceChildren(
+              h('div', { class: 'title-bar' },
+                h('div', { class: 'title-bar-text' }, `Quick question ${answers.length + 1}/2`)),
+              h('div', { class: 'window-body ask-body' }, ...[ // (skip empty bits, or they'd print as "false")
+                why === 'time' && answers.length === 0 && T.sticker("Time's up", -6),
+                T.human(q[0]),
+                h('div', { class: 'ask-options' },
+                  options.map(([text, v]) => h('button', { class: 'ask-btn', onclick: () => pick(v) }, text))),
+                T.label('No wrong answers'),
+              ].filter(Boolean)));
+            if (!ask.isConnected) document.body.append(ask);
           };
           askNext();
 
@@ -504,6 +520,7 @@
         cancelAnimationFrame(raf);
         clearInterval(countTimer);
         if ((phase === 'countin' || phase === 'play') && c.teardown && api) c.teardown(api);
+        if (this.ask) this.ask.remove();
         phase = 'done';
         W.setTimer(null);
       },
