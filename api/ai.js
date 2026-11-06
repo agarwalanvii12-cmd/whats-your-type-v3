@@ -29,13 +29,13 @@ const PALETTES = ['Pop', 'Pastel', 'Complementary', 'Sunset', 'Triadic', 'Monoch
 const FONTS = [
   'Playfair Display', 'Press Start 2P', 'Archivo Black', 'Anton', 'Monoton', 'Silkscreen',
   'Unbounded', 'Rubik Glitch', 'EB Garamond', 'Special Elite', 'Work Sans', 'VT323',
-  'Josefin Sans', 'Caveat', 'Space Grotesk', 'Comfortaa',
+  'Josefin Sans', 'Caveat', 'Space Grotesk', 'Comfortaa', 'Space Mono', 'Instrument Serif',
 ];
 const TYPES = [
   'The Editor-in-Chief', 'The Arcade Kid', 'The Swiss Machine', 'The Billboard Brat', 'The Neon Sign',
   'The Pixel Punk', 'The Future Shaper', 'The Chaos Engine', 'The Old Soul', 'The Typewriter Poet',
   'The Quiet Modernist', 'The Terminal Dreamer', 'The Art Deco Ghost', 'The Scrapbook Heart',
-  'The Soft Futurist', 'The Cloud Doodler',
+  'The Soft Futurist', 'The Cloud Doodler', 'The Code Poet', 'The Gallery Whisperer',
 ];
 
 const SYSTEM =
@@ -72,7 +72,7 @@ function buildPrompt(body) {
     const palette = PALETTES.includes(body.palette) ? body.palette : 'Pop';
     return (
       `Player: ${name}. Personality traits: ${describe(traits)}. ` +
-      `Their design type: ${type}. Their top fonts: ${fonts.join(', ')}. ` +
+      `Their design type: ${type}. Their fonts: headline ${fonts[0]}, subheader ${fonts[1]}, body text ${fonts[2]}. ` +
       `The font that pairs best with them: ${pair}. Their chosen colour palette: ${palette}. ` +
       'In 2 short sentences (max 45 words), Gen Z tone but kind: describe their designer ' +
       'personality (how they work and show up), then one playful tip for using their fonts.'

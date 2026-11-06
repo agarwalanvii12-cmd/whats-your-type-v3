@@ -204,19 +204,22 @@
     },
   };
 
-  /* ---------- KERN, the mascot ----------
-     A pixel letter tile (with a T on its chest) who blinks and steps.
-     W.mascot('text') → element with Kern + a speech bubble. */
-  let kernFrame = 0;
+  /* ---------- POINT, the mascot ----------
+     A 3D lavender pixel cursor with a face, burning with pixel flames.
+     The flames flicker and Point blinks now and then.
+     W.mascot('text') → element with Point + a speech bubble. */
+  const POINT_FRAMES = ['point1', 'point2', 'point1', 'point2', 'point1', 'point3'];
+  let pointStep = 0;
   setInterval(() => {
-    kernFrame = 1 - kernFrame;
-    const src = W.iconURL(kernFrame ? 'kern2' : 'kern1', 4);
-    document.querySelectorAll('.kern-img').forEach(img => { if (!calm()) img.src = src; });
-  }, 520);
+    if (calm()) return;
+    pointStep = (pointStep + 1) % POINT_FRAMES.length;
+    const src = W.iconURL(POINT_FRAMES[pointStep], 3);
+    document.querySelectorAll('.point-img').forEach(img => { img.src = src; });
+  }, 260);
   W.mascot = function (say) {
     const h = W.h;
     return h('div', { class: 'mascot' },
-      h('img', { class: 'kern-img', src: W.iconURL('kern1', 4), alt: 'Kern, a pixel letter tile' }),
+      h('img', { class: 'point-img', src: W.iconURL('point1', 3), alt: 'Point, a pixel cursor on fire' }),
       say && h('p', { class: 'kern-say' }, say));
   };
 

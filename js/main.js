@@ -209,12 +209,12 @@
       const head = [
         invite,
         T.sticker('Design personality test', -4),
-        T.ransom("What's your type?", 36, 'lobby'),
+        T.ransom("What's your type?", 32, 'lobby'),
         h('div', { class: 'lobby-intro' },
-          W.mascot("hi, i'm Kern. i keep things in line."),
+          W.mascot("hi, i'm Point. i'll point you to your type."),
           h('div', {},
             T.human('not your dating type. your typeface.'),
-            T.label('A test that finds your designer personality and the fonts that match it'))),
+            T.label('Find your design personality + fonts'))),
         L.status === 'idle' && howItWorks(),
       ];
       const nameField = h('div', { class: 'field' },

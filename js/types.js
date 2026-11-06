@@ -5,10 +5,11 @@
    between two ends, measured by one challenge (half) + two quick
    questions (half), plus a small nudge from the palette you pick.
 
-   16 FONT TYPES. Each font has a personality: a spot on all
-   5 scales. Your result = the fonts closest to your spot:
-   your #1 font is your type, plus your top 3, plus the font
-   that pairs best with you (headline + body style).
+   18 FONT TYPES. Each font has a personality: a spot on all
+   5 scales, and a job it's best at (headline, subheader, body).
+   Your result = the fonts closest to your spot: your #1 font is
+   your type, then your best headline, subheader and body font,
+   plus the font that pairs best with you.
 
    Names, lines and questions live here so they're easy to edit.
    ========================================================= */
@@ -95,25 +96,28 @@
     paint:      [ 0.00,  0.00,  0.10,  0.00,  0.03],
   };
 
-  /* ---------- 16 font types ----------
-     p = personality: [volume, structure, era, precision, pace], each 0..1 */
+  /* ---------- 18 font types ----------
+     p = personality: [energy, structure, era, detail, pace], each 0..1
+     role = the job it's best at: head(line), sub(header) or body text */
   W.FONTS = [
-    { font: 'Playfair Display', weight: 900, name: 'The Editor-in-Chief', line: 'classic, sharp, a little dramatic.',   p: [0.85, 0.75, 0.80, 0.85, 0.35] },
-    { font: 'Press Start 2P',   weight: 400, name: 'The Arcade Kid',      line: 'high score energy, pixel perfect.',   p: [0.80, 0.80, 0.95, 0.45, 0.90] },
-    { font: 'Archivo Black',    weight: 400, name: 'The Swiss Machine',   line: 'bold, gridded, zero nonsense.',       p: [0.90, 0.95, 0.30, 0.85, 0.70] },
-    { font: 'Anton',            weight: 400, name: 'The Billboard Brat',  line: 'big, fast and impossible to miss.',   p: [1.00, 0.60, 0.45, 0.40, 0.95] },
-    { font: 'Monoton',          weight: 400, name: 'The Neon Sign',       line: 'a late-night diner glow.',            p: [0.80, 0.35, 0.90, 0.55, 0.45] },
-    { font: 'Silkscreen',       weight: 400, name: 'The Pixel Punk',      line: 'lo-fi on purpose.',                   p: [0.60, 0.70, 0.90, 0.30, 0.85] },
-    { font: 'Unbounded',        weight: 900, name: 'The Future Shaper',   line: 'wide, round, already in 2030.',       p: [0.85, 0.45, 0.05, 0.60, 0.75] },
-    { font: 'Rubik Glitch',     weight: 400, name: 'The Chaos Engine',    line: 'breaks things beautifully.',          p: [0.90, 0.10, 0.30, 0.05, 0.95] },
-    { font: 'EB Garamond',      weight: 400, name: 'The Old Soul',        line: 'quiet, wise, beautifully set.',       p: [0.20, 0.80, 0.95, 0.90, 0.15] },
-    { font: 'Special Elite',    weight: 400, name: 'The Typewriter Poet', line: 'smudged ink, big feelings.',          p: [0.35, 0.40, 0.95, 0.30, 0.30] },
-    { font: 'Work Sans',        weight: 300, name: 'The Quiet Modernist', line: 'clean lines, calm mind.',             p: [0.15, 0.90, 0.20, 0.85, 0.50] },
-    { font: 'VT323',            weight: 400, name: 'The Terminal Dreamer', line: 'green screen, big ideas.',           p: [0.30, 0.75, 0.85, 0.50, 0.70] },
-    { font: 'Josefin Sans',     weight: 300, name: 'The Art Deco Ghost',  line: 'elegant, airy, a bit mysterious.',    p: [0.30, 0.55, 0.75, 0.80, 0.35] },
-    { font: 'Caveat',           weight: 400, name: 'The Scrapbook Heart', line: 'handmade, warm, a little messy.',     p: [0.40, 0.05, 0.50, 0.10, 0.60] },
-    { font: 'Space Grotesk',    weight: 300, name: 'The Soft Futurist',   line: 'friendly tech, soft edges.',          p: [0.30, 0.60, 0.10, 0.70, 0.60] },
-    { font: 'Comfortaa',        weight: 400, name: 'The Cloud Doodler',   line: 'round, soft, endlessly kind.',        p: [0.35, 0.30, 0.30, 0.40, 0.50] },
+    { font: 'Playfair Display', weight: 900, name: 'The Editor-in-Chief', line: 'classic, sharp, a little dramatic.',   p: [0.85, 0.75, 0.80, 0.85, 0.35] , role: 'head' },
+    { font: 'Press Start 2P',   weight: 400, name: 'The Arcade Kid',      line: 'high score energy, pixel perfect.',   p: [0.80, 0.80, 0.95, 0.45, 0.90] , role: 'head' },
+    { font: 'Archivo Black',    weight: 400, name: 'The Swiss Machine',   line: 'bold, gridded, zero nonsense.',       p: [0.90, 0.95, 0.30, 0.85, 0.70] , role: 'head' },
+    { font: 'Anton',            weight: 400, name: 'The Billboard Brat',  line: 'big, fast and impossible to miss.',   p: [1.00, 0.60, 0.45, 0.40, 0.95] , role: 'head' },
+    { font: 'Monoton',          weight: 400, name: 'The Neon Sign',       line: 'a late-night diner glow.',            p: [0.80, 0.35, 0.90, 0.55, 0.45] , role: 'head' },
+    { font: 'Silkscreen',       weight: 400, name: 'The Pixel Punk',      line: 'lo-fi on purpose.',                   p: [0.60, 0.70, 0.90, 0.30, 0.85] , role: 'sub' },
+    { font: 'Unbounded',        weight: 900, name: 'The Future Shaper',   line: 'wide, round, already in 2030.',       p: [0.85, 0.45, 0.05, 0.60, 0.75] , role: 'head' },
+    { font: 'Rubik Glitch',     weight: 400, name: 'The Chaos Engine',    line: 'breaks things beautifully.',          p: [0.90, 0.10, 0.30, 0.05, 0.95] , role: 'head' },
+    { font: 'EB Garamond',      weight: 400, name: 'The Old Soul',        line: 'quiet, wise, beautifully set.',       p: [0.20, 0.80, 0.95, 0.90, 0.15] , role: 'body' },
+    { font: 'Special Elite',    weight: 400, name: 'The Typewriter Poet', line: 'smudged ink, big feelings.',          p: [0.35, 0.40, 0.95, 0.30, 0.30] , role: 'sub' },
+    { font: 'Work Sans',        weight: 300, name: 'The Quiet Modernist', line: 'clean lines, calm mind.',             p: [0.15, 0.90, 0.20, 0.85, 0.50] , role: 'body' },
+    { font: 'VT323',            weight: 400, name: 'The Terminal Dreamer', line: 'green screen, big ideas.',           p: [0.30, 0.75, 0.85, 0.50, 0.70] , role: 'sub' },
+    { font: 'Josefin Sans',     weight: 300, name: 'The Art Deco Ghost',  line: 'elegant, airy, a bit mysterious.',    p: [0.30, 0.55, 0.75, 0.80, 0.35] , role: 'sub' },
+    { font: 'Caveat',           weight: 400, name: 'The Scrapbook Heart', line: 'handmade, warm, a little messy.',     p: [0.40, 0.05, 0.50, 0.10, 0.60] , role: 'sub' },
+    { font: 'Space Grotesk',    weight: 300, name: 'The Soft Futurist',   line: 'friendly tech, soft edges.',          p: [0.30, 0.60, 0.10, 0.70, 0.60] , role: 'body' },
+    { font: 'Comfortaa',        weight: 400, name: 'The Cloud Doodler',   line: 'round, soft, endlessly kind.',        p: [0.35, 0.30, 0.30, 0.40, 0.50] , role: 'sub' },
+    { font: 'Space Mono',       weight: 400, name: 'The Code Poet',       line: 'monospaced, honest, a little nerdy.', p: [0.40, 0.85, 0.55, 0.75, 0.60], role: 'body' },
+    { font: 'Instrument Serif', weight: 400, name: 'The Gallery Whisperer', line: 'soft serif, quietly expensive.',   p: [0.20, 0.55, 0.65, 0.70, 0.30], role: 'body' },
   ];
 
   const clamp01 = v => Math.max(0, Math.min(1, Number.isFinite(v) ? v : 0.5));
@@ -140,10 +144,12 @@
       .sort((a, b) => b.match - a.match);
   };
 
-  /* Your full result: type (#1 font), top 3, and best pair */
+  /* Your full result: type (#1 font overall), your 3 fonts (one per job:
+     headline, subheader, body text, so they're 3 different kinds), and best pair */
+  const ROLES = [['head', 'Headline'], ['sub', 'Subheader'], ['body', 'Body text']];
   W.resultFor = function (traits) {
     const ranked = W.rankFonts(traits);
-    const top3 = ranked.slice(0, 3);
+    const top3 = ROLES.map(([role, roleName]) => ({ ...ranked.find(f => f.role === role), roleName }));
     // the ideal partner: opposite volume + era (headline meets body, old meets new),
     // same structure, precision and pace (you'd share a grid and a rhythm)
     const ideal = [1 - traits[0], traits[1], 1 - traits[2], traits[3], traits[4]];

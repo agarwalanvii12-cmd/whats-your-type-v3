@@ -781,8 +781,8 @@ input[type="range"]::-moz-range-thumb {
 
 /* ---------- KERN (mascot), CARD WALL, AI READING ---------- */
 .mascot { display: flex; align-items: center; gap: 10px; }
-.kern-img { flex: none; width: 56px; height: auto; image-rendering: pixelated; animation: kern-bob 1.04s steps(2) infinite; }
-@keyframes kern-bob { 50% { transform: translateY(-3px); } }
+.point-img { flex: none; width: 66px; height: auto; image-rendering: pixelated; animation: point-hover 1.56s steps(3) infinite; }
+@keyframes point-hover { 33% { transform: translate(2px, -3px) rotate(-4deg); } 66% { transform: translate(-1px, -1px) rotate(2deg); } }
 .kern-say {
   position: relative;
   margin: 0;
@@ -807,7 +807,12 @@ input[type="range"]::-moz-range-thumb {
   border-bottom: 2px solid var(--ink);
   transform: rotate(45deg);
 }
-.lobby-intro { display: flex; flex-direction: column; gap: 8px; }
+.lobby-intro { display: flex; flex-direction: column; gap: 6px; }
+.lobby-intro .point-img { width: 50px; }
+.lobby-intro .kern-say { font-size: 12px; padding: 5px 9px; }
+.lobby-intro .human { font-size: 22px; }
+.how { gap: 4px; padding: 8px 12px; }
+.how-text span { font-size: 16px; }
 .lobby-intro .label { margin-top: 4px; }
 
 .note-wrap { position: relative; display: flex; flex-direction: column; align-items: center; padding-top: 12px; }
@@ -1120,7 +1125,7 @@ input[type="range"]::-moz-range-thumb {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .kern-img,
+  .point-img,
   .boot-tap, .card-img, .sparkles img, .ransom.drop .rt, .boot-logo.pulse, #screen.swap-in,
   .attract-card.in, .attract-tap, .boot-status::after { animation: none; }
   .sparkles img { opacity: .8; }

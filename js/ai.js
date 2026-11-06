@@ -44,7 +44,7 @@
       .slice(0, 2);
     const lines = strongest.map(s => cap(W.traitLine(s.i, s.v)));
     return `${name}, ${lines[0].charAt(0).toLowerCase() + lines[0].slice(1)} ${lines[1]} ` +
-      `Try ${result.top3[0].font} for headlines and ${result.pair.font} for everything else.`;
+      `Set headlines in ${result.top3[0].font} and body text in ${result.top3[2].font}.`;
   }
 
   // check AI questions: 5 traits × 2 × [question, low answer, high answer], short strings

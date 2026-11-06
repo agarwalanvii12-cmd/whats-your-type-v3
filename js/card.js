@@ -195,12 +195,12 @@
     cy += 24;
     label(ctx, 'Your 3 fonts', ix, cy);
     cy += 10;
-    top3.forEach((f, i) => {
-      const fs = 26;
-      text(ctx, `${i + 1}`, ix, cy + 28, '700 13px "Space Mono"', '#555555');
+    top3.forEach(f => {
+      const fs = 26, fx = ix + 112;
+      text(ctx, f.roleName.toUpperCase(), ix, cy + 27, '700 11px "Space Mono"', '#555555', 'left', 1);
       let s2 = fs; ctx.font = fontCss(f, s2);
-      while (s2 > 14 && ctx.measureText(f.font).width > iw - 110) { s2 -= 1; ctx.font = fontCss(f, s2); }
-      text(ctx, f.font, ix + 24, cy + 30, fontCss(f, s2), COL.ink);
+      while (s2 > 14 && ctx.measureText(f.font).width > iw - 112 - 56) { s2 -= 1; ctx.font = fontCss(f, s2); }
+      text(ctx, f.font, fx, cy + 30, fontCss(f, s2), COL.ink);
       text(ctx, `${f.match}%`, ix + iw, cy + 28, '700 13px "Space Mono"', COL.ink, 'right');
       cy += 40;
     });
@@ -334,7 +334,7 @@
         T.sticker('You are', -4),
         title,
         T.human(type.line),
-        W.mascot('nice type. i would kern you anywhere.'),
+        W.mascot('told you. that is SO your type.'),
         note,
         T.label('Your personality picked these fonts'),
         box,
