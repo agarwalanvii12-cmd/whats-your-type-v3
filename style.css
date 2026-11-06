@@ -522,6 +522,7 @@ input[type="range"]::-moz-range-thumb {
   -webkit-user-select: none;
 }
 .kern-letter.dragging { color: var(--navy); }
+.kern-word { padding: 0 .02em; white-space: nowrap; }
 .kern-bar { position: absolute; top: 1.28em; height: 12px; background: #ff3b30; border: 1px solid var(--ink); }
 .kern-bar.ok { background: #00a86b; }
 
@@ -777,6 +778,46 @@ input[type="range"]::-moz-range-thumb {
   font-weight: 700;
   text-align: center;
 }
+
+/* ---------- KERN (mascot), CARD WALL, AI READING ---------- */
+.mascot { display: flex; align-items: center; gap: 10px; }
+.kern-img { flex: none; width: 56px; height: auto; image-rendering: pixelated; animation: kern-bob 1.04s steps(2) infinite; }
+@keyframes kern-bob { 50% { transform: translateY(-3px); } }
+.kern-say {
+  position: relative;
+  margin: 0;
+  padding: 6px 10px;
+  background: #fff;
+  border: 2px solid var(--ink);
+  border-radius: 12px;
+  font-family: var(--mono);
+  font-size: 13px;
+  line-height: 1.3;
+}
+.kern-say::before { /* the bubble's tail, pointing at Kern */
+  content: "";
+  position: absolute;
+  left: -9px;
+  top: 50%;
+  width: 12px;
+  height: 12px;
+  margin-top: -6px;
+  background: #fff;
+  border-left: 2px solid var(--ink);
+  border-bottom: 2px solid var(--ink);
+  transform: rotate(45deg);
+}
+.lobby-intro { display: flex; flex-direction: column; gap: 8px; }
+.lobby-intro .label { margin-top: 4px; }
+
+.note-wrap { position: relative; display: flex; flex-direction: column; align-items: center; padding-top: 12px; }
+.note-wrap > .sticker { position: absolute; top: 0; left: 6px; z-index: 2; background: #ffd23f; font-size: 13px; }
+.note-win { box-shadow: 4px 4px 0 var(--ink); }
+.note-text { font-family: var(--serif); font-style: italic; font-size: 21px; line-height: 1.3; background: #fffbea; }
+
+.pin-row { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.pin-btn { min-width: 220px; }
+.attract-tag { align-self: center; transform: rotate(-3deg); }
 
 /* ---------- TASKBAR ---------- */
 .taskbar {
@@ -1079,6 +1120,7 @@ input[type="range"]::-moz-range-thumb {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .kern-img,
   .boot-tap, .card-img, .sparkles img, .ransom.drop .rt, .boot-logo.pulse, #screen.swap-in,
   .attract-card.in, .attract-tap, .boot-status::after { animation: none; }
   .sparkles img { opacity: .8; }

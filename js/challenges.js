@@ -178,32 +178,36 @@
   };
 
   /* ======================================================
-     4 · EVEN IT OUT (12s)
-     The word TYPE with lumpy spacing. Slide letters left/right.
-     Gap bars under each gap turn green when they match.
-     evenness ≥ 0.75 → K (Kerner), else V (Vibes)
+     4 · EVEN IT OUT (25s) · word spacing
+     "MIND THE GAP" set with lumpy spaces between the words.
+     Slide the words left/right; the bars under each gap turn
+     green when the gaps match. Even spacing → Detail-obsessed,
+     left lumpy → Big picture.
      ====================================================== */
-  const START_GAPS = [0.04, 0.62, 0.22];  // in em: lumpy on purpose
-  const EVEN_TOLERANCE = 0.0625;           // a gap within this (em) of the average is "even"
+  const WORDS = ['MIND', 'THE', 'GAP'];
+  const START_GAPS = [0.12, 1.15];   // in em: lumpy on purpose
+  const EVEN_TOLERANCE = 0.12;       // gaps within this (em) of the average count as even
 
   const evenItOut = {
     setup(stage, api) {
       const { h, data: d } = api;
       const box = h('div', { class: 'kern-box' });
       stage.append(box);
-      const fontPx = Math.min(80, Math.floor(stage.clientWidth / 4.6));
+      const fontPx = Math.min(56, Math.floor(stage.clientWidth / 9.6));
       box.style.fontSize = fontPx + 'px';
-      box.style.height = Math.round(fontPx * 1.8) + 'px';
+      box.style.height = Math.round(fontPx * 2.1) + 'px';
 
-      d.letters = [...'TYPE'].map(ch => h('span', { class: 'kern-letter' }, ch));
-      d.bars = [0, 1, 2].map(() => h('i', { class: 'kern-bar' }));
-      box.append(...d.letters, ...d.bars);
-      Object.assign(d, { box, fontPx, moves: 0, ready: false, x: [], w: [] });
+      const n = WORDS.length;
+      d.words = WORDS.map(w => h('span', { class: 'kern-letter kern-word' }, w));
+      d.bars = WORDS.slice(1).map(() => h('i', { class: 'kern-bar' }));
+      box.append(...d.words, ...d.bars);
+      Object.assign(d, { box, fontPx, n, moves: 0, ready: false, x: [], w: [] });
 
+      const gapsPx = () => d.bars.map((_, j) => d.x[j + 1] - (d.x[j] + d.w[j]));
       const render = () => {
-        d.letters.forEach((l, i) => { l.style.left = d.x[i] + 'px'; });
-        const gaps = [0, 1, 2].map(j => d.x[j + 1] - (d.x[j] + d.w[j]));
-        const mean = gaps.reduce((a, b) => a + b, 0) / 3;
+        d.words.forEach((el, i) => { el.style.left = d.x[i] + 'px'; });
+        const gaps = gapsPx();
+        const mean = gaps.reduce((a, b) => a + b, 0) / gaps.length;
         d.bars.forEach((b, j) => {
           b.style.left = d.x[j] + d.w[j] + 'px';
           b.style.width = Math.max(3, gaps[j]) + 'px';
@@ -212,43 +216,43 @@
       };
 
       const place = () => {
-        d.w = d.letters.map(l => l.offsetWidth);
+        d.w = d.words.map(el => el.offsetWidth);
         const total = d.w.reduce((a, b) => a + b, 0) + START_GAPS.reduce((a, b) => a + b, 0) * fontPx;
         let x = Math.max(0, (box.clientWidth - total) / 2);
-        d.letters.forEach((l, i) => { d.x[i] = x; x += d.w[i] + (START_GAPS[i] || 0) * fontPx; });
+        d.words.forEach((el, i) => { d.x[i] = x; x += d.w[i] + (START_GAPS[i] || 0) * fontPx; });
         d.ready = true;
         render();
       };
-      // wait for the font, so letter widths are measured correctly
+      // wait for the font, so word widths are measured correctly
       document.fonts.load(`900 ${fontPx}px "Playfair Display"`).then(place, place);
 
-      d.letters.forEach((l, i) => {
+      d.words.forEach((el, i) => {
         let start = null;
-        l.addEventListener('pointerdown', e => {
+        el.addEventListener('pointerdown', e => {
           if (!api.active || !d.ready) return;
           e.preventDefault();
-          l.setPointerCapture(e.pointerId);
+          el.setPointerCapture(e.pointerId);
           start = { px: e.clientX, x: d.x[i] };
-          l.classList.add('dragging');
+          el.classList.add('dragging');
         });
-        l.addEventListener('pointermove', e => {
+        el.addEventListener('pointermove', e => {
           if (!start) return;
           const min = i > 0 ? d.x[i - 1] + d.w[i - 1] : 0;
-          const max = i < 3 ? d.x[i + 1] - d.w[i] : box.clientWidth - d.w[i];
+          const max = i < n - 1 ? d.x[i + 1] - d.w[i] : box.clientWidth - d.w[i];
           d.x[i] = clamp(start.x + (e.clientX - start.px), min, max);
           render();
         });
-        const drop = () => { if (start) { start = null; d.moves++; l.classList.remove('dragging'); } };
-        l.addEventListener('pointerup', drop);
-        l.addEventListener('pointercancel', drop);
+        const drop = () => { if (start) { start = null; d.moves++; el.classList.remove('dragging'); } };
+        el.addEventListener('pointerup', drop);
+        el.addEventListener('pointercancel', drop);
       });
     },
     score({ data: d }) {
       const gaps = d.ready
-        ? [0, 1, 2].map(j => (d.x[j + 1] - (d.x[j] + d.w[j])) / d.fontPx)
+        ? d.bars.map((_, j) => (d.x[j + 1] - (d.x[j] + d.w[j])) / d.fontPx)
         : START_GAPS.slice();
       const spread = Math.max(...gaps) - Math.min(...gaps);
-      const evenness = clamp(1 - spread / 0.5, 0, 1);
+      const evenness = clamp(1 - spread / 0.8, 0, 1);
       return { part: evenness, evenness: round2(evenness), gaps: gaps.map(round2), moves: d.moves };
     },
   };
@@ -329,7 +333,7 @@
     { id: 1, trait: 0, name: 'Make It Loud',   time: 25, hint: 'Drag both sliders to style it',  ...loud },
     { id: 2, trait: 1, name: 'Make It Read',   time: 25, hint: 'Tap lines in reading order',     ...makeItRead },
     { id: 3, trait: 2, name: 'Rapid Fire',     time: 25, hint: 'Tap the one you vibe with',      ...rapidFire },
-    { id: 4, trait: 3, name: 'Even It Out',    time: 25, hint: 'Slide letters to even the gaps', ...evenItOut },
+    { id: 4, trait: 3, name: 'Even It Out',    time: 25, hint: 'Slide words to even the gaps',   ...evenItOut },
     { id: 5, trait: 4, name: 'Type Your Name', time: 25, hint: 'Type your name, fast',           ...typeYourName },
   ];
 

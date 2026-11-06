@@ -216,7 +216,7 @@
 
     // footer: OK / Cancel / Apply, like every Win95 dialog
     const by = y + h - 44;
-    text(ctx, "WHAT'S YOUR TYPE?! v3", x + 16, by + 20, '400 11px Silkscreen', '#404040');
+    text(ctx, "WHAT'S YOUR TYPE?!", x + 16, by + 20, '400 11px Silkscreen', '#404040');
     button(g, ctx, x + w - 312, by, 92, 30, 'OK', true);
     button(g, ctx, x + w - 210, by, 92, 30, 'Cancel');
     button(g, ctx, x + w - 108, by, 92, 30, 'Apply');
@@ -302,11 +302,30 @@
 
       // ask for the AI reading straight away, while the card prints
       const reading = W.ai.reading(name, result);
-      const noteText = h('p', { class: 'note-text' }, 'thinking...');
+      const noteText = h('p', { class: 'note-text' }, 'reading your personality...');
       const noteTag = h('span', { class: 'label note-tag' });
-      const note = h('div', { class: 'window note-win' },
-        h('div', { class: 'title-bar' }, h('div', { class: 'title-bar-text' }, 'reading.txt - Notepad')),
-        h('div', { class: 'window-body note-body' }, noteText, noteTag));
+      const noteSticker = T.sticker('Your AI reading', -5);
+      const note = h('div', { class: 'note-wrap' },
+        noteSticker,
+        h('div', { class: 'window note-win' },
+          h('div', { class: 'title-bar' }, h('div', { class: 'title-bar-text' }, 'reading.txt - Notepad')),
+          h('div', { class: 'window-body note-body' }, noteText, noteTag)));
+
+      // pin to the Card Wall (opt-in): your card then shows in the screensaver
+      const pinMsg = h('span', { class: 'label pin-msg', 'aria-live': 'polite' });
+      const pin = T.magButton(h('button', {
+        class: 'pin-btn',
+        onclick: async () => {
+          pin.disabled = true;
+          pinMsg.textContent = 'pinning...';
+          const ok = await fetch('api/gallery', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ share: state.share }),
+          }).then(r => r.ok).catch(() => false);
+          pinMsg.textContent = ok ? 'Pinned! Watch for it on the wall.' : "Couldn't pin. Try again.";
+          if (ok) { W.sound.play('ding'); T.magButton(pin, 'Pinned', 'pinned'); } else pin.disabled = false;
+        },
+      }), 'Pin to the Card Wall', 'pin');
 
       const title = T.ransom(shortName(type), 48, 'type' + type.font);
       title.classList.add('waiting');
@@ -315,9 +334,11 @@
         T.sticker('You are', -4),
         title,
         T.human(type.line),
+        W.mascot('nice type. i would kern you anywhere.'),
+        note,
         T.label('Your personality picked these fonts'),
         box,
-        note,
+        h('div', { class: 'pin-row' }, pin, pinMsg),
         isIOS() && T.label('Tip: long-press the card to save'),
         h('div', { class: 'actions' }, h('div', { class: 'row' }, dl, next))));
 
@@ -336,7 +357,8 @@
         reading.then(r => {
           if (this.token !== token) return;
           W.fx.typeOut(noteText, r.text, 22);
-          noteTag.textContent = r.ai ? 'Written by AI' : 'Offline reading';
+          noteTag.textContent = r.ai ? 'Written by AI just for you' : 'Offline reading';
+          if (!r.ai) noteSticker.textContent = 'Your reading';
           state.card.reading = r.text;
         });
         const file = `whats-your-type-${shortName(type).replace(/\s+/g, '-')}-${name.replace(/[^a-z0-9]+/gi, '-')}.png`;

@@ -114,8 +114,7 @@
     const box = $('#boot-title');
     box.replaceChildren(
       T.ransom("What's your type?!", 46, 'boot', { dark: true, align: 'center' }),
-      Object.assign(T.sticker('v3', 8), { className: 'sticker pill s1' }),
-      Object.assign(T.sticker('2 players', -6, 'tag'), { className: 'sticker tag s2' }),
+      Object.assign(T.sticker('solo / 2 player', -6, 'tag'), { className: 'sticker tag s2' }),
     );
   }
 
@@ -211,7 +210,11 @@
         invite,
         T.sticker('Design personality test', -4),
         T.ransom("What's your type?", 36, 'lobby'),
-        T.human('find your designer personality, and the fonts that match it.'),
+        h('div', { class: 'lobby-intro' },
+          W.mascot("hi, i'm Kern. i keep things in line."),
+          h('div', {},
+            T.human('not your dating type. your typeface.'),
+            T.label('A test that finds your designer personality and the fonts that match it'))),
         L.status === 'idle' && howItWorks(),
       ];
       const nameField = h('div', { class: 'field' },
@@ -519,7 +522,7 @@
 
   /* ---------- DESKTOP ICONS ---------- */
   const DESK = [
-    ['folder', 'My Types'],
+    ['folder', 'Card Wall'],
     ['floppy', 'Floppy (A:)'],
     ['cd', 'Fonts CD'],
     ['help', 'Help'],
@@ -536,6 +539,7 @@
         list.querySelectorAll('.icon').forEach(b => b.classList.remove('selected'));
         btn.classList.add('selected');
         if (icon === 'help') openAbout();
+        if (icon === 'folder') W.fx.attract.show();
       });
       list.append(h('li', {}, btn));
     });
@@ -567,6 +571,7 @@
       if (action === 'new') W.go('lobby');
       if (action === 'restart') W.go('boot');
       if (action === 'about') openAbout();
+      if (action === 'wall') W.fx.attract.show();
       if (action === 'sounds') openSoundTest();
     });
 

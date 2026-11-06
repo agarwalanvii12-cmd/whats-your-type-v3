@@ -2,8 +2,8 @@
 
 Same as `python3 -m http.server`, but:
 - tells the browser never to cache, so every reload shows your latest changes
-- runs a local copy of the live-room relay (/api/room), kept in memory,
-  so rooms work on your laptop exactly like on Vercel
+- runs local copies of the live-room relay (/api/room) and the Card Wall
+  (/api/gallery), kept in memory, so they work on your laptop like on Vercel
 
 The AI (/api/ai) only runs on Vercel; locally the game uses its offline reading.
 
@@ -20,6 +20,7 @@ import time
 PORT = 8000
 LETTERS = "ABCDEFGHJKLMNPQRSTUVWXYZ"
 ROOMS = {}            # code -> {"host", "guest", "seen": {}, "to": {"host": [], "guest": []}, "t"}
+WALL = []             # pinned cards (share codes), newest first
 LOCK = threading.Lock()
 
 
@@ -102,21 +103,34 @@ class Handler(http.server.SimpleHTTPRequestHandler):
     def do_GET(self):
         if self.path.split("?")[0] == "/api/room":
             return self.send_json(200, {"relay": True})
+        if self.path.split("?")[0] == "/api/gallery":
+            return self.send_json(200, {"cards": WALL[:60]})
         return super().do_GET()
 
     def do_POST(self):
-        if self.path.split("?")[0] != "/api/room":
+        path = self.path.split("?")[0]
+        if path not in ("/api/room", "/api/gallery"):
             return self.send_json(404, {"error": "Not here"})
         try:
             length = int(self.headers.get("Content-Length") or 0)
             body = json.loads(self.rfile.read(length) or b"{}")
         except Exception:
             return self.send_json(400, {"error": "Bad request"})
+        if path == "/api/gallery":
+            share = str(body.get("share", ""))
+            if not re.fullmatch(r"[A-Za-z0-9_-]{20,900}", share):
+                return self.send_json(400, {"error": "Bad card"})
+            with LOCK:
+                if share in WALL:
+                    WALL.remove(share)
+                WALL.insert(0, share)
+                del WALL[60:]
+            return self.send_json(200, {"ok": True})
         status, data = room_api(body)
         self.send_json(status, data)
 
     def log_message(self, fmt, *args):
-        if "/api/room" not in (args[0] if args else ""):  # don't spam the terminal with polls
+        if "/api/" not in (args[0] if args else ""):  # don't spam the terminal with polls
             super().log_message(fmt, *args)
 
 

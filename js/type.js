@@ -31,7 +31,6 @@
     { family: '"Archivo Black"',    weight: 400, style: 'normal', scale: 0.95, lower: true },  // heavy grotesk
     { family: '"Bebas Neue"',       weight: 400, style: 'normal', scale: 1.3,  lower: false, sy: 1.12 }, // tall condensed
     { family: 'Oswald',             weight: 300, style: 'normal', scale: 1.15, lower: true,  sy: 1.12 }, // tall light
-    { family: '"Work Sans"',        weight: 200, style: 'normal', scale: 1.1,  lower: true },  // thin sans
     { family: '"Rubik Mono One"',   weight: 400, style: 'normal', scale: 0.8,  lower: false, sy: 0.9 },  // wide short
     { family: 'Unbounded',          weight: 900, style: 'normal', scale: 0.82, lower: true,  sy: 0.9 },  // wide heavy
     { family: 'Unbounded',          weight: 300, style: 'normal', scale: 0.85, lower: true },  // wide light
@@ -67,7 +66,7 @@
     { id: 'serif',  name: 'Serifs',     note: 'bookish and dramatic',
       fonts: [...by('Playfair', 'any'), ...by('DM Serif', 'any'), ...by('Fraunces', 'any')] },
     { id: 'sans',   name: 'Sans',       note: 'clean and punchy',
-      fonts: [...by('Bagel'), ...by('Archivo'), ...by('Bebas'), ...by('Oswald'), ...by('Work Sans'), ...by('Unbounded')] },
+      fonts: [...by('Bagel'), ...by('Archivo'), ...by('Bebas'), ...by('Oswald'), ...by('Unbounded')] },
     { id: 'retro',  name: 'Retro',      note: 'arcade and terminal',
       fonts: [...by('Press Start'), ...by('Bungee'), ...by('Rubik Mono'), ...by('Space Mono', 'any'), ...by('Bebas')] },
     { id: 'chunky', name: 'Chunky',     note: 'heavy everything',

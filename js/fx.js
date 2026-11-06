@@ -130,7 +130,7 @@
     { name: 'Jun',  face: 0, traits: [0.8, 0.8, 0.9, 0.5, 0.85] },
   ];
   const attract = {
-    last: performance.now(), on: false, cards: [], i: 0, el: null, swap: 0,
+    last: performance.now(), on: false, cards: [], rendered: {}, i: 0, el: null, swap: 0,
     init() {
       const wake = () => { this.last = performance.now(); };
       ['pointerdown', 'pointermove', 'keydown', 'touchstart', 'wheel'].forEach(ev =>
@@ -143,14 +143,16 @@
       }, 2000);
     },
     async show() {
+      if (this.on) return;
       this.on = true;
       const h = W.h, T = W.type;
       const img = h('img', { class: 'attract-card', alt: '' });
       const caption = h('p', { class: 'human attract-caption' });
+      const tag = h('p', { class: 'sticker attract-tag' }, 'Card wall');
       this.el = h('div', { class: 'attract', role: 'dialog', 'aria-label': 'Sample Type Cards. Tap to play.' },
         h('div', { class: 'attract-inner' },
           T.ransom("What's your type?!", 40, 'boot', { dark: true, align: 'center' }),
-          img, caption,
+          tag, img, caption,
           h('p', { class: 'attract-tap' }, 'Tap to play')));
       const close = e => {
         e.preventDefault();
@@ -162,15 +164,25 @@
       document.addEventListener('keydown', this.onKey, { capture: true });
       document.body.append(this.el);
 
-      if (!this.cards.length) {
-        for (const s of SAMPLES) {
-          if (!this.on) return;
-          const result = W.resultFor(s.traits);
-          const card = await W.renderCard({ name: s.name, avatar: W.DEFAULT_FACES[s.face], result });
-          this.cards.push({ src: card.dataURL, text: `${s.name} is ${result.type.name.replace(/^The /, 'the ')}.` });
-          if (this.cards.length === 1) this.next(img, caption);
+      // the Card Wall (cards players pinned) first, then the built-in samples
+      this.cards = [];
+      this.i = 0;
+      const wall = await fetch('api/gallery').then(r => (r.ok ? r.json() : { cards: [] })).catch(() => ({ cards: [] }));
+      const people = (wall.cards || []).map(c => W.net.decode(c)).filter(Boolean).slice(0, 12)
+        .map(p => ({ name: p.name, avatar: p.avatar, traits: p.traits, pinned: true }));
+      if (people.length < 3) SAMPLES.forEach(s => people.push({ name: s.name, avatar: W.DEFAULT_FACES[s.face], traits: s.traits }));
+      tag.textContent = (wall.cards || []).length ? `Card wall · ${(wall.cards || []).length} pinned` : 'Sample cards';
+      for (const p of people) {
+        if (!this.on) return;
+        const key = p.name + p.traits.join() + p.avatar.join('');
+        if (!this.rendered[key]) {
+          const result = W.resultFor(p.traits);
+          const card = await W.renderCard({ name: p.name, avatar: p.avatar, result });
+          this.rendered[key] = { src: card.dataURL, text: `${p.name} is ${result.type.name.replace(/^The /, 'the ')}.` };
         }
-      } else this.next(img, caption);
+        this.cards.push(this.rendered[key]);
+        if (this.cards.length === 1) this.next(img, caption);
+      }
       this.swap = setInterval(() => this.next(img, caption), SWAP_MS);
     },
     next(img, caption) {
@@ -190,6 +202,22 @@
       this.el = null;
       this.last = performance.now();
     },
+  };
+
+  /* ---------- KERN, the mascot ----------
+     A pixel letter tile (with a T on its chest) who blinks and steps.
+     W.mascot('text') → element with Kern + a speech bubble. */
+  let kernFrame = 0;
+  setInterval(() => {
+    kernFrame = 1 - kernFrame;
+    const src = W.iconURL(kernFrame ? 'kern2' : 'kern1', 4);
+    document.querySelectorAll('.kern-img').forEach(img => { if (!calm()) img.src = src; });
+  }, 520);
+  W.mascot = function (say) {
+    const h = W.h;
+    return h('div', { class: 'mascot' },
+      h('img', { class: 'kern-img', src: W.iconURL('kern1', 4), alt: 'Kern, a pixel letter tile' }),
+      say && h('p', { class: 'kern-say' }, say));
   };
 
   W.fx = {
