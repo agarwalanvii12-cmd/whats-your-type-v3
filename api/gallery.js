@@ -13,7 +13,13 @@
 
 const URL_ = process.env.KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_URL;
 const TOKEN = process.env.KV_REST_API_TOKEN || process.env.UPSTASH_REDIS_REST_TOKEN;
-const KEY = 'wyt3:wall';
+// Each "session" is its own wall. To start fresh (e.g. before a showcase), change
+// WALL_SESSION in Vercel's environment variables (or bump the default) and redeploy;
+// older walls listed in OLD_WALLS are deleted from storage.
+const SESSION = process.env.WALL_SESSION || '2';
+const KEY = `wyt3:wall:${SESSION}`;
+const OLD_WALLS = ['wyt3:wall', 'wyt3:wall:1'];
+let cleaned = false;
 const MAX = 60;
 const LIMIT = 5, WINDOW_MS = 10 * 60 * 1000; // pins per person per 10 minutes
 
@@ -43,6 +49,10 @@ module.exports = async function handler(req, res) {
     return req.method === 'GET' ? res.status(200).json({ cards: [] }) : res.status(503).json({ error: 'Wall is not set up' });
   }
   try {
+    if (!cleaned) { // once per server start: delete the old walls
+      cleaned = true;
+      await redis(['DEL', ...OLD_WALLS.filter(k => k !== KEY)]);
+    }
     if (req.method === 'GET') {
       const cards = await redis(['LRANGE', KEY, 0, MAX - 1]);
       return res.status(200).json({ cards: cards || [] });
