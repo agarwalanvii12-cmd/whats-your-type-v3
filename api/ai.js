@@ -94,16 +94,16 @@ function buildPrompt(body) {
     );
   }
   if (body.kind === 'questions') {
+    const example = TRAITS.map((t, i) => `{"scale": ${i + 1}, "question": string, "${t[0]}": string, "${t[1]}": string}`);
     return (
       'Write 10 quick this-or-that questions for a designer personality quiz played by ' +
       'design students at a showcase. Gen Z tone, funny, about studio life, crits, Figma, ' +
-      'moodboards, deadlines, group projects. Write 2 new questions for each of these 5 scales: ' +
-      TRAITS.map((t, i) => `scale ${i + 1} = ${t[0]} (low) vs ${t[1]} (high)`).join('; ') + '. ' +
-      'For every question, "low" is an answer only a ' + 'LOW-end person would pick and "high" is an answer ' +
-      'only a HIGH-end person would pick: they must point in opposite directions on that scale. ' +
-      'Question: max 34 characters. Each answer: max 30 characters. Never use placeholders like "...". ' +
-      'Reply with JSON only: {"questions": [ {"scale": 1, "question": string, "low": string, "high": string}, ' +
-      '... 10 objects, 2 per scale ] }'
+      'moodboards, deadlines, group projects. 2 new questions for each of these 5 scales: ' +
+      TRAITS.map((t, i) => `scale ${i + 1} = ${t[0]} vs ${t[1]}`).join('; ') + '. ' +
+      'Each question has two answers, each written under the name of the personality it fits: ' +
+      'the answer under "Futurist" must sound like a futurist, the one under "Nostalgic" like a nostalgic person, and so on. ' +
+      'Question: max 34 characters. Each answer: max 30 characters. No placeholders. ' +
+      'Reply with JSON only: {"questions": [ 10 objects, 2 per scale, shaped like: ' + example.join(' / ') + ' ] }'
     );
   }
   return bad('kind');
@@ -129,6 +129,18 @@ function cleanQuestions(raw) {
   if (!Array.isArray(list)) bad('shape');
   // a scale written as an object holding its questions → just the questions
   list = list.map(p => (p && !Array.isArray(p) && typeof p === 'object' && !triple(p) ? Object.values(p).find(Array.isArray) || p : p));
+  // best case: answers written under the trait names, e.g. {"scale":3, "Futurist": "...", "Nostalgic": "..."}
+  const findKey = (q, word) => Object.keys(q).find(k => k.toLowerCase().replace(/[^a-z]/g, '') === word.toLowerCase().replace(/[^a-z]/g, ''));
+  if (list.length === 10 && list.every(q => q && typeof q === 'object' && !Array.isArray(q))) {
+    const named = TRAITS.map((t, i) => list
+      .filter(q => Number(q.scale) === i + 1)
+      .map(q => {
+        const lo = findKey(q, t[0]), hi = findKey(q, t[1]);
+        const text = q.question || q.q || q.text;
+        return lo && hi && text ? [text, q[lo], q[hi]] : null;
+      }));
+    if (named.every(g => g.length === 2 && g.every(Boolean))) list = named;
+  }
   // 10 single questions: group by their "scale" number if they have one, else in order
   if (list.length === 10 && list.every(q => triple(q))) {
     const byScale = [1, 2, 3, 4, 5].map(n => list.filter(q => q && Number(q.scale) === n));
