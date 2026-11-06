@@ -8,7 +8,8 @@
                         part: 0..1 toward the trait's high end
      teardown(api)      (optional) clean up listeners
 
-   After the timed part, 2 quick personality questions (untimed).
+   After the timed part, 2 quick personality questions (untimed),
+   AI-written per game when available, else picked at random from a pool.
    Trait = half the challenge + a quarter per question.
 
    One shared runner (below) handles the rest: the Win95 dialog,
@@ -61,86 +62,70 @@
   };
 
   /* ======================================================
-     2 · SNAP OR NOT (12s)
-     Drag 4 shapes on a grid. A "snap to grid" checkbox is on.
-     snap left on, or most shapes on the grid → G, else F
+     2 · MAKE IT READ (25s)  · visual hierarchy
+     3 lines of a poster, each in a different font. Tap them in the
+     order you'd want people to read them: 1st = huge, 3rd = small.
+     Classic order (headline, then subhead, then details) → Planner,
+     a reshuffled hierarchy → Free spirit.
      ====================================================== */
-  const NEUTRALS = ['#111111', '#000000', '#ffffff', '#f3ead3', '#fff3d6', '#c0c0c0', '#808080'];
-  function shapeColors() {
-    let list = W.type.palette().colors.filter(c => !NEUTRALS.includes(c));
-    if (list.length < 4) list = ['#ff4fa3', '#ffd23f', '#3a86ff', '#9be15d'];
-    return list.slice().sort(() => Math.random() - 0.5).slice(0, 4);
-  }
-  const SHAPES = {
-    square: '<rect x="10" y="10" width="80" height="80"/>',
-    circle: '<circle cx="50" cy="50" r="41"/>',
-    triangle: '<polygon points="50,8 93,90 7,90"/>',
-    diamond: '<polygon points="50,5 95,50 50,95 5,50"/>',
-  };
+  const HEAD_FONTS = [['Anton', 400, 'normal'], ['Archivo Black', 400, 'normal'], ['Bagel Fat One', 400, 'normal'], ['Bungee', 400, 'normal']];
+  const SUB_FONTS = [['Playfair Display', 400, 'italic'], ['DM Serif Display', 400, 'italic'], ['Fraunces', 300, 'italic']];
+  const BODY_FONTS = [['Space Mono', 400, 'normal'], ['Work Sans', 400, 'normal'], ['VT323', 400, 'normal']];
+  const POSTERS = [
+    ['OPEN STUDIO', 'friday, 7pm', 'free drinks · bring a friend'],
+    ['GIG TONIGHT', 'doors at 8', 'level 2 · cash only'],
+    ['THRIFT POP-UP', 'everything must go', 'sat 10am · block 5'],
+  ];
+  const SIZES = [46, 24, 15]; // px for 1st, 2nd, 3rd place
+  const anyOf = list => list[Math.floor(Math.random() * list.length)];
 
-  const snapOrNot = {
+  const makeItRead = {
     setup(stage, api) {
       const { h, data: d } = api;
-      const N = 6; // grid cells per side
-      const board = h('div', { class: 'snap-board', style: `--n:${N}` });
-      const snap = h('input', { type: 'checkbox', id: 'snap', checked: true });
-      stage.append(board, h('div', { class: 'field-row snap-row' }, snap, h('label', { for: 'snap' }, 'Snap to grid')));
-      Object.assign(d, { board, snap, N, moves: 0, shapes: [] });
+      const words = anyOf(POSTERS);
+      const fonts = [anyOf(HEAD_FONTS), anyOf(SUB_FONTS), anyOf(BODY_FONTS)];
+      // 0 = headline, 1 = subhead, 2 = details (the "classic" order)
+      d.items = words.map((text, i) => ({ i, text, font: fonts[i] }));
+      d.order = [];
+      const fontCss = ([f, w, st]) => `font-family:"${f}";font-weight:${w};font-style:${st}`;
 
-      // start in messy, off-grid spots
-      const colors = shapeColors();
-      const used = new Set();
-      Object.keys(SHAPES).forEach((kind, i) => {
-        let cx, cy;
-        do { cx = Math.floor(Math.random() * (N - 1)); cy = Math.floor(Math.random() * (N - 1)); } while (used.has(cx + ',' + cy));
-        used.add(cx + ',' + cy);
-        const s = { kind, x: cx + 0.25 + Math.random() * 0.5, y: cy + 0.25 + Math.random() * 0.5 };
-        s.el = h('div', { class: 'shape', 'aria-label': kind });
-        s.el.innerHTML = `<svg viewBox="0 0 100 100" fill="${colors[i]}" stroke="#111" stroke-width="6">${SHAPES[kind]}</svg>`;
-        board.append(s.el);
-        d.shapes.push(s);
+      const poster = h('div', { class: 'read-poster' });
+      const tray = h('div', { class: 'read-tray' });
+      const reset = h('button', { class: 'read-reset', onclick: () => { if (api.active) { d.order = []; render(); } } }, 'Reset');
+      stage.append(poster, tray, reset);
 
-        let start = null;
-        s.el.addEventListener('pointerdown', e => {
-          if (!api.active) return;
-          e.preventDefault();
-          s.el.setPointerCapture(e.pointerId);
-          start = { px: e.clientX, py: e.clientY, x: s.x, y: s.y };
-          s.el.classList.add('dragging');
-        });
-        s.el.addEventListener('pointermove', e => {
-          if (!start) return;
-          const cell = board.clientWidth / N;
-          s.x = clamp(start.x + (e.clientX - start.px) / cell, 0, N - 1);
-          s.y = clamp(start.y + (e.clientY - start.py) / cell, 0, N - 1);
-          place(s);
-        });
-        const drop = () => {
-          if (!start) return;
-          start = null;
-          s.el.classList.remove('dragging');
-          if (snap.checked) { s.x = Math.round(s.x); s.y = Math.round(s.y); }
-          d.moves++;
-          place(s);
-        };
-        s.el.addEventListener('pointerup', drop);
-        s.el.addEventListener('pointercancel', drop);
-      });
-
-      // positions are stored in grid cells, so they survive a resize
-      const place = s => {
-        s.el.style.left = (s.x / N) * 100 + '%';
-        s.el.style.top = (s.y / N) * 100 + '%';
+      const render = () => {
+        poster.replaceChildren(...[0, 1, 2].map(slot => {
+          const it = d.items[d.order[slot]];
+          return it
+            ? h('p', { class: 'read-line', style: `${fontCss(it.font)};font-size:${SIZES[slot]}px` }, it.text)
+            : h('p', { class: 'read-slot' }, `${slot + 1}${['st', 'nd', 'rd'][slot]} read`);
+        }));
+        tray.replaceChildren(...d.trayOrder.map(idx => {
+          const it = d.items[idx];
+          const used = d.order.includes(idx);
+          return h('button', {
+            class: 'read-pick', disabled: used, style: fontCss(it.font),
+            onclick: () => {
+              if (!api.active || used) return;
+              d.order.push(idx);
+              render();
+              if (d.order.length === 3) setTimeout(api.finish, 600);
+            },
+          }, it.text);
+        }));
       };
-      d.shapes.forEach(place);
+      d.trayOrder = [0, 1, 2].sort(() => Math.random() - 0.5);
+      render();
     },
     score({ data: d }) {
-      const onGrid = v => Math.abs(v - Math.round(v)) < 0.08;
-      const aligned = d.shapes.filter(s => onGrid(s.x) && onGrid(s.y)).length;
-      // half for leaving snap on, half for how many shapes sit on the grid
-      const part = (d.snap.checked ? 0.5 : 0) + 0.5 * (aligned / 4);
-      return { part, snap: d.snap.checked, aligned, moves: d.moves };
+      // anything not placed goes in the order it sat in the tray
+      const order = d.order.concat(d.trayOrder.filter(i => !d.order.includes(i)));
+      let swaps = 0;
+      for (let a = 0; a < 3; a++) for (let b = a + 1; b < 3; b++) if (order[a] > order[b]) swaps++;
+      return { part: 1 - swaps / 3, order: order.map(i => d.items[i].text), placed: d.order.length };
     },
+    detail: r => `you read: ${r.order.join(' > ')}`,
   };
 
   /* ======================================================
@@ -338,24 +323,22 @@
   };
 
   /* ---------- the list (names, times, copy) ---------- */
-  // questions: [question, answer for the LOW end, answer for the HIGH end]
+  // Each challenge feeds one trait (index into WYT.TRAITS).
+  // The 2 questions after it come from the game's question set (AI or the pool).
   W.CHALLENGES = [
-    { id: 1, trait: 0, name: 'Make It Loud', time: 25, hint: 'Drag to make it loud', ...loud,
-      questions: [['At a party you are...', 'deep in a kitchen chat', 'on the dance floor'],
-                  ['Your dream poster:', 'lots of white space', 'one giant word']] },
-    { id: 2, trait: 1, name: 'Snap Or Not', time: 25, hint: 'Place the shapes', ...snapOrNot,
-      questions: [['Your desktop is...', 'a beautiful mess', 'folders in folders'],
-                  ['On a trip you...', 'wing it', 'have a spreadsheet']] },
-    { id: 3, trait: 2, name: 'Rapid Fire', time: 25, hint: 'Pick fast', ...rapidFire,
-      questions: [['Dream studio:', 'glass and screens', 'an old print shop'],
-                  ['Music on...', 'a playlist', 'vinyl']] },
-    { id: 4, trait: 3, name: 'Even It Out', time: 25, hint: 'Slide to even the gaps', ...evenItOut,
-      questions: [['You spot a 1px gap.', 'nobody will see', 'fix it now'],
-                  ['Your files are named...', 'final_final_v3', 'v03_2026-11-05']] },
-    { id: 5, trait: 4, name: 'Type Your Name', time: 25, hint: 'Tap the keys', ...typeYourName,
-      questions: [['Ideas arrive...', 'slow, fully formed', 'fast, all at once'],
-                  ["You'd rather...", 'one more round', 'ship it today']] },
+    { id: 1, trait: 0, name: 'Make It Loud',   time: 25, hint: 'Drag to make it loud',   ...loud },
+    { id: 2, trait: 1, name: 'Make It Read',   time: 25, hint: 'Tap in reading order',   ...makeItRead },
+    { id: 3, trait: 2, name: 'Rapid Fire',     time: 25, hint: 'Pick fast',              ...rapidFire },
+    { id: 4, trait: 3, name: 'Even It Out',    time: 25, hint: 'Slide to even the gaps', ...evenItOut },
+    { id: 5, trait: 4, name: 'Type Your Name', time: 25, hint: 'Tap the keys',           ...typeYourName },
   ];
+
+  // this game's questions: AI-written if they arrived, else 2 random from the pool
+  function questionsFor(state, trait) {
+    if (state.aiQuestions && state.aiQuestions[trait]) return state.aiQuestions[trait];
+    if (!state.questions) state.questions = W.pickQuestions();
+    return state.questions[trait];
+  }
 
   /* A scale between the two ends of a trait, with a marker where you are.
      Shared with the card and compat screens. */
@@ -393,9 +376,8 @@
         }), 'OK', 'ok' + c.id);
 
         el.append(h('div', { class: 'stack chal-stack' },
-          T.sticker(`${c.id}/5 · ${W.TRAITS[c.trait].name} · ${c.time}s`, c.id % 2 ? -4 : 3),
+          T.sticker(`Challenge ${c.id}/5 · ${c.time}s`, c.id % 2 ? -4 : 3),
           T.ransom(c.name, 30, c.name),
-          T.label(`Measures: ${W.TRAITS[c.trait].low} vs ${W.TRAITS[c.trait].high}`),
           h('div', { class: 'window chal-win' },
             h('div', { class: 'title-bar' },
               h('div', { class: 'title-bar-text' }, c.name),
@@ -468,9 +450,9 @@
           T.magButton(okBtn, 'Pick one', 'pick' + c.id);
           const answers = [];
           const askNext = () => {
-            const q = c.questions[answers.length];
+            const q = questionsFor(state, c.trait)[answers.length];
             if (!q) { ask.hidden = true; finish(); return; }
-            const pick = v => { answers.push(v); askNext(); };
+            const pick = v => { if (phase !== 'ask') return; answers.push(v); askNext(); };
             const options = [[q[1], 0], [q[2], 1]];
             if (Math.random() < 0.5) options.reverse();
             ask.replaceChildren(

@@ -167,11 +167,103 @@
   const PREFIX = 'wyt3-';
   const LETTERS = 'ABCDEFGHJKLMNPQRSTUVWXYZ'; // no I or O (look like 1 and 0)
   const CONNECT_TIMEOUT = 8000;
+  const JOIN_TIMEOUT = 14000; // joining may go through a relay server, which takes longer
+
+  /* Which servers to use to find each other (and relay through, if the
+     wifi blocks direct links). Fetched once from our /api/turn function. */
+  let iceConfig = null;
+  function getIce() {
+    if (!iceConfig) {
+      const fallback = { iceServers: [{ urls: 'stun:stun.l.google.com:19302' },
+        { urls: ['turn:eu-0.turn.peerjs.com:3478', 'turn:us-0.turn.peerjs.com:3478'], username: 'peerjs', credential: 'peerjsp' }] };
+      const ctrl = new AbortController();
+      const t = setTimeout(() => ctrl.abort(), 2500);
+      iceConfig = fetch('api/turn', { signal: ctrl.signal })
+        .then(r => (r.ok ? r.json() : null))
+        .then(j => (j && Array.isArray(j.iceServers) ? { iceServers: j.iceServers } : fallback))
+        .catch(() => fallback)
+        .finally(() => clearTimeout(t));
+    }
+    return iceConfig;
+  }
   const START_DELAY = 1200;                    // ms between "Start" and everyone starting
   const HEARTBEAT = 2500, SILENCE = 9000;      // ping often; this long without a word = gone
-  const ROUNDS = ['draw', 'challenge1', 'challenge2', 'challenge3', 'challenge4', 'challenge5', 'card'];
+  const ROUNDS = ['draw', 'challenge1', 'challenge2', 'challenge3', 'challenge4', 'challenge5', 'palette', 'card'];
 
   const newCode = () => Array.from({ length: 4 }, () => LETTERS[Math.floor(Math.random() * LETTERS.length)]).join('');
+
+  /* ---------- SERVER RELAY (for wifi that blocks direct links) ----------
+     When the site runs on Vercel with rooms storage set up (api/room.js),
+     phones talk through our server instead of directly. RelayConn looks
+     like a PeerJS connection (open / data / close), so nothing else changes. */
+  let relayCheck = null;
+  function useRelay() {
+    if (!relayCheck) {
+      const ctrl = new AbortController();
+      const t = setTimeout(() => ctrl.abort(), 2500);
+      relayCheck = fetch('api/room', { signal: ctrl.signal })
+        .then(r => (r.ok ? r.json() : null))
+        .then(j => !!(j && j.relay))
+        .catch(() => false)
+        .finally(() => clearTimeout(t));
+    }
+    return relayCheck;
+  }
+  async function roomApi(body) {
+    const ctrl = new AbortController();
+    const t = setTimeout(() => ctrl.abort(), 7000);
+    try {
+      const r = await fetch('api/room', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body), signal: ctrl.signal,
+      });
+      const j = await r.json().catch(() => ({}));
+      if (!r.ok) { const e = new Error(j.error || 'Room error'); e.status = r.status; throw e; }
+      return j;
+    } finally {
+      clearTimeout(t);
+    }
+  }
+  const nap = ms => new Promise(r => setTimeout(r, ms));
+
+  class RelayConn {
+    constructor(code, me) {
+      Object.assign(this, { code, me, open: false, polling: false, handlers: {}, queue: Promise.resolve(), fails: 0 });
+    }
+    on(ev, fn) { this.handlers[ev] = fn; }
+    fire(ev, x) { if (this.handlers[ev]) this.handlers[ev](x); }
+    // guest: we're in, start talking
+    start() { this.open = true; this.fire('open'); this.listen(); }
+    // host: wait for the guest's first message, then we're "open"
+    async listen() {
+      if (this.polling) return;
+      this.polling = true;
+      while (this.polling) {
+        try {
+          const r = await roomApi({ action: 'poll', code: this.code, me: this.me });
+          this.fails = 0;
+          for (const m of r.msgs || []) {
+            if (!this.open) { this.open = true; this.fire('open'); }
+            this.fire('data', m);
+          }
+        } catch (e) {
+          if (++this.fails > 20) { this.polling = false; this.fire('close'); return; }
+        }
+        await nap(this.open ? 350 : 800);
+      }
+    }
+    send(msg) {
+      if (!this.open) return;
+      // keep messages in order: each send waits for the one before
+      this.queue = this.queue.then(() => roomApi({ action: 'send', code: this.code, me: this.me, msg })).catch(() => {});
+    }
+    close() {
+      if (!this.polling && !this.open) return;
+      this.polling = false;
+      this.open = false;
+      roomApi({ action: 'leave', code: this.code, me: this.me }).catch(() => {});
+    }
+  }
 
   const live = {
     status: 'idle',   // idle | hosting | joining | connected
@@ -208,11 +300,41 @@
 
     host(name) {
       this.leave(true);
-      if (!this.ready()) return;
       Object.assign(this, { status: 'hosting', role: 'host', me: name, code: newCode(), error: null, open: false });
       this.timer = setTimeout(() => { if (!this.open) this.fail('Could not open a room'); }, CONNECT_TIMEOUT);
 
-      const peer = (this.peer = new window.Peer(PREFIX + this.code, { debug: 0 }));
+      const code = this.code;
+      useRelay().then(relay => {
+        if (this.status !== 'hosting' || this.code !== code) return; // cancelled meanwhile
+        if (relay) { this.hostRelay(name, code); return; }
+        if (!this.ready()) return;
+        getIce().then(config => {
+          if (this.status !== 'hosting' || this.code !== code) return;
+          this.makeHostPeer(name, config);
+        });
+      });
+      this.emit();
+    },
+
+    // host through our server: get a room code, then wait for the guest's hello
+    hostRelay(name, tempCode) {
+      roomApi({ action: 'create', name })
+        .then(r => {
+          if (this.status !== 'hosting' || this.code !== tempCode) return;
+          this.code = r.code;
+          this.open = true;
+          this.relay = true;
+          clearTimeout(this.timer);
+          const c = new RelayConn(r.code, 'host');
+          this.attach(c);
+          c.listen();
+          this.emit();
+        })
+        .catch(() => { if (this.status === 'hosting') this.fail('Could not open a room'); });
+    },
+
+    makeHostPeer(name, config) {
+      const peer = (this.peer = new window.Peer(PREFIX + this.code, { debug: 0, config }));
       peer.on('open', () => { this.open = true; clearTimeout(this.timer); this.emit(); });
       peer.on('connection', c => {
         if (this.conn) { c.on('open', () => c.close()); return; } // room is full (2 players)
@@ -222,20 +344,51 @@
         if (e.type === 'unavailable-id' && this.status === 'hosting') { this.host(name); return; } // code taken: try another
         if (this.status !== 'connected') this.fail(e.type === 'network' ? 'No connection to the room server' : 'Room error');
       });
-      this.emit();
     },
 
     join(code, name) {
       this.leave(true);
-      if (!this.ready()) return;
       Object.assign(this, { status: 'joining', role: 'guest', me: name, code, error: null });
-      this.timer = setTimeout(() => { if (this.status === 'joining') this.fail(`Could not reach room ${code}`); }, CONNECT_TIMEOUT);
+      this.timer = setTimeout(() => {
+        if (this.status === 'joining') this.fail(`Couldn't reach room ${code}. This wifi may block it: try a phone hotspot.`);
+      }, JOIN_TIMEOUT);
 
-      const peer = (this.peer = new window.Peer({ debug: 0 }));
-      peer.on('open', () => this.attach(peer.connect(PREFIX + code, { reliable: true })));
-      peer.on('error', e => {
-        if (this.status === 'connected') return;
-        this.fail(e.type === 'peer-unavailable' ? `No room called ${code}` : 'Could not connect');
+      useRelay().then(relay => {
+        if (this.status !== 'joining' || this.code !== code) return; // cancelled meanwhile
+        if (relay) { this.joinRelay(code, name); return; }
+        if (!this.ready()) return;
+        this.joinPeer(code);
+      });
+      this.emit();
+    },
+
+    // join through our server
+    joinRelay(code, name) {
+      roomApi({ action: 'join', code, name })
+        .then(r => {
+          if (this.status !== 'joining' || this.code !== code) return;
+          this.relay = true;
+          this.opp = r.host;
+          const c = new RelayConn(code, 'guest');
+          this.attach(c);
+          c.start();
+        })
+        .catch(e => {
+          if (this.status !== 'joining') return;
+          this.fail(e.status === 404 ? `No room called ${code}` : e.status === 409 ? `Room ${code} is full` : 'Could not connect');
+        });
+    },
+
+    // join directly (PeerJS), used when there's no server relay
+    joinPeer(code) {
+      getIce().then(config => {
+        if (this.status !== 'joining' || this.code !== code) return; // cancelled meanwhile
+        const peer = (this.peer = new window.Peer({ debug: 0, config }));
+        peer.on('open', () => this.attach(peer.connect(PREFIX + code, { reliable: true })));
+        peer.on('error', e => {
+          if (this.status === 'connected') return;
+          this.fail(e.type === 'peer-unavailable' ? `No room called ${code}` : 'Could not connect');
+        });
       });
       this.emit();
     },
@@ -423,7 +576,7 @@
       clearInterval(this.beat);
       const conn = this.conn, peer = this.peer;
       try { if (conn && conn.open) conn.send({ type: 'bye' }); } catch (e) { /* closing anyway */ }
-      Object.assign(this, { status: 'idle', role: null, conn: null, peer: null, opp: null, open: false });
+      Object.assign(this, { status: 'idle', role: null, conn: null, peer: null, opp: null, open: false, relay: false });
       setTimeout(() => { // give "bye" a moment to arrive
         try { if (conn) conn.close(); } catch (e) { /* already closed */ }
         try { if (peer) peer.destroy(); } catch (e) { /* already gone */ }

@@ -19,13 +19,13 @@
   const ORDER = [
     'boot', 'lobby', 'draw',
     'challenge1', 'challenge2', 'challenge3', 'challenge4', 'challenge5',
-    'card', 'compat',
+    'palette', 'card', 'compat',
   ];
   const LABELS = {
     boot: 'Boot', lobby: 'Lobby', draw: 'Draw yourself',
     challenge1: 'Challenge 1', challenge2: 'Challenge 2', challenge3: 'Challenge 3',
     challenge4: 'Challenge 4', challenge5: 'Challenge 5',
-    card: 'Type Card', compat: 'Compatibility',
+    palette: 'Palette', card: 'Type Card', compat: 'Compatibility',
   };
 
   /* ---------- game state (shared by every screen) ---------- */
@@ -34,6 +34,9 @@
     W.state.avatar = null;
     W.state.results = {};
     W.state.card = null;
+    W.state.questions = null;      // 2 random pool questions per trait (picked when needed)
+    W.state.aiQuestions = null;    // fresh AI-written ones, if they arrive in time
+    if (W.ai) W.ai.prepareQuestions(W.state);
   };
 
   /* ---------- tiny helper to build HTML elements ---------- */
@@ -264,7 +267,9 @@
       const leave = T.magButton(h('button', { onclick: () => L.leave() }), L.connected ? 'Leave room' : 'Cancel', 'leave');
       let inner;
 
-      if (L.status === 'hosting') {
+      if (L.status === 'hosting' && !L.open) {
+        inner = [T.human('opening room...')];
+      } else if (L.status === 'hosting') {
         const url = location.origin + location.pathname + '#r=' + L.code;
         const qr = W.net.qrImage(url);
         inner = [

@@ -1,8 +1,9 @@
 /* =========================================================
    types.js · the personality model
 
-   5 TRAITS. Each is a scale from 0 to 1 between two poles,
-   measured by one challenge (half) + two quick questions (half).
+   5 TRAITS (personality first). Each is a scale from 0 to 1
+   between two ends, measured by one challenge (half) + two quick
+   questions (half), plus a small nudge from the palette you pick.
 
    16 FONT TYPES. Each font has a personality: a spot on all
    5 scales. Your result = the fonts closest to your spot:
@@ -16,20 +17,83 @@
   const W = (window.WYT = window.WYT || {});
 
   /* ---------- the 5 traits ----------
-     low = the 0 end, high = the 1 end.
-     Each trait has a one-line meaning for both ends. */
+     Personality first. low = the 0 end, high = the 1 end,
+     with a one-line meaning for each end. */
   W.TRAITS = [
-    { id: 'volume',    name: 'Volume',    low: 'Quiet',   high: 'Loud',
-      lowLine: 'you let the work speak.', highLine: 'you walk in and own the room.' },
-    { id: 'structure', name: 'Structure', low: 'Freeform', high: 'Planner',
+    { id: 'energy',    name: 'Energy',    low: 'Introvert',   high: 'Extrovert',
+      lowLine: 'you recharge alone and design deep.', highLine: 'you light up the room (and the moodboard).' },
+    { id: 'structure', name: 'Structure', low: 'Free spirit', high: 'Planner',
       lowLine: 'rules are a suggestion.', highLine: 'everything has a place.' },
-    { id: 'era',       name: 'Era',       low: 'Futurist', high: 'Nostalgic',
+    { id: 'era',       name: 'Era',       low: 'Futurist',    high: 'Nostalgic',
       lowLine: 'always on the next thing.', highLine: 'old soul, good taste.' },
-    { id: 'precision', name: 'Precision', low: 'Vibes',   high: 'Perfectionist',
-      lowLine: 'close enough is beautiful.', highLine: 'you see the 1px gap.' },
-    { id: 'pace',      name: 'Pace',      low: 'Careful', high: 'Quick',
+    { id: 'detail',    name: 'Detail',    low: 'Big picture', high: 'Detail-obsessed',
+      lowLine: 'you see the whole poster, not the pixels.', highLine: 'you see the 1px gap.' },
+    { id: 'pace',      name: 'Pace',      low: 'Slow burner', high: 'Fast mover',
       lowLine: 'slow, considered, fully formed.', highLine: 'fast hands, faster ideas.' },
   ];
+
+  /* ---------- quick questions (the hand-written pool) ----------
+     [question, answer for the LOW end, answer for the HIGH end].
+     Each game picks 2 at random per trait (AI may write fresh ones instead). */
+  W.QUESTION_POOL = [
+    [ // Energy: Introvert vs Extrovert
+      ['Crit day. You...', 'pray they skip you', 'volunteer to go first'],
+      ['Group project energy:', "I'll do my part. alone.", 'I made the group chat'],
+      ['Studio playlist is...', 'noise-cancelling, no talking', 'on speaker, everyone vibes'],
+      ['Showcase night you are...', 'by the snacks, observing', 'giving tours of my work'],
+      ['Your Pinterest boards are...', 'secret, for me only', 'public and I send them'],
+      ['After a 6 hour studio sesh...', 'nap and silence pls', 'who wants bubble tea?'],
+    ],
+    [ // Structure: Free spirit vs Planner
+      ['Your Figma layers are...', 'Rectangle 47 copy 3', 'named, grouped, colour-coded'],
+      ['Brief drops. First move?', 'vibe sketch immediately', 'make a timeline'],
+      ['Your desktop is...', 'a beautiful mess', 'folders in folders'],
+      ['Deadline in 3 days. You...', 'will feel it out', 'already have a plan'],
+      ['Moodboard method:', 'chaos collage', 'grid, sorted by colour'],
+      ['Weekend plans?', 'see where it goes', 'itinerary in Notion'],
+    ],
+    [ // Era: Futurist vs Nostalgic
+      ['Your camera roll is...', 'clean phone shots', 'film and digicam pics'],
+      ['Dream studio:', 'glass and screens', 'an old print shop'],
+      ['Fave design era:', 'whatever drops next', 'Y2K and before'],
+      ['Music on...', 'a playlist', 'vinyl, obviously'],
+      ['Your font crush:', 'something variable and new', 'a classic serif'],
+      ['You sketch with...', 'iPad and Procreate', 'pen and paper'],
+    ],
+    [ // Detail: Big picture vs Detail-obsessed
+      ['You spot a 1px gap.', 'nobody will notice', 'fix it immediately'],
+      ['Your files are named...', 'final_final_v3', 'v03_2026-11-05'],
+      ['Kerning?', "it's fine", 'I see it in my dreams'],
+      ['Feedback you get most:', 'love the idea!', 'so polished!'],
+      ['Picking colours:', 'eyeball it', 'exact hex codes only'],
+      ['Your sketches are...', 'loose scribbles', 'basically final art'],
+    ],
+    [ // Pace: Slow burner vs Fast mover
+      ['Ideas arrive...', 'slowly, fully formed', 'fast, all at once'],
+      ["You'd rather...", 'one more round', 'ship it today'],
+      ['Your process:', 'research rabbit hole first', '20 thumbnails right now'],
+      ['Lunch order:', 'read the whole menu', 'same thing, instantly'],
+      ['Exporting:', 'check every frame', 'export and send'],
+      ['Replying to the group chat:', 'draft it twice', 'instant voice note'],
+    ],
+  ];
+
+  // 2 random questions per trait for one game
+  W.pickQuestions = function () {
+    return W.QUESTION_POOL.map(pool => pool.slice().sort(() => Math.random() - 0.5).slice(0, 2));
+  };
+
+  /* ---------- palettes nudge your personality a little ----------
+     [energy, structure, era, detail, pace] added to your traits */
+  W.PALETTE_NUDGE = {
+    pop:        [ 0.10,  0.00, -0.05,  0.00,  0.05],
+    pastel:     [-0.08,  0.00,  0.04,  0.00, -0.05],
+    complement: [ 0.03,  0.05,  0.00,  0.05,  0.00],
+    analogous:  [ 0.05, -0.05,  0.08,  0.00,  0.00],
+    triadic:    [ 0.05,  0.05,  0.00, -0.03,  0.03],
+    mono:       [-0.10,  0.08,  0.00,  0.08, -0.03],
+    paint:      [ 0.00,  0.00,  0.10,  0.00,  0.03],
+  };
 
   /* ---------- 16 font types ----------
      p = personality: [volume, structure, era, precision, pace], each 0..1 */
@@ -57,8 +121,10 @@
   const MAX_DIST = Math.sqrt(5); // furthest two spots can be
 
   /* results[1..5].trait (0..1) → [volume, structure, era, precision, pace] */
+  //    + a small nudge from the palette you picked (results.palette)
   W.traitsFrom = function (results = {}) {
-    return W.TRAITS.map((t, i) => clamp01(results[i + 1] && results[i + 1].trait));
+    const nudge = W.PALETTE_NUDGE[results.palette] || [0, 0, 0, 0, 0];
+    return W.TRAITS.map((t, i) => clamp01((results[i + 1] ? clamp01(results[i + 1].trait) : 0.5) + nudge[i]));
   };
 
   // "Loud" or "Quiet" for one trait value
@@ -88,7 +154,7 @@
   /* ---------- Compatibility between two people (max 100) ----------
      Per trait: some are better different, some better the same. */
   const COMPAT = [
-    { pts: 25, why: 'different', score: d => 0.35 + 0.65 * d },       // volume: loud + quiet = headline + body
+    { pts: 25, why: 'different', score: d => 0.35 + 0.65 * d },       // energy: extrovert + introvert = headline + body
     { pts: 20, why: 'same',      score: d => 0.35 + 0.65 * (1 - d) }, // structure: you'd share a grid
     { pts: 20, why: 'different', score: d => 0.5 + 0.5 * d },         // era: old meets new
     { pts: 20, why: 'same',      score: d => 0.2 + 0.8 * (1 - d) },   // precision: no kerning fights

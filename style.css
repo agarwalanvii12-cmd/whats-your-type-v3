@@ -714,6 +714,33 @@ input[type="range"]::-moz-range-thumb {
 .ai-line[hidden] { display: none; }
 .ai-text { font-size: 20px; }
 
+/* ---------- 2 · MAKE IT READ (hierarchy) ---------- */
+.read-poster {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 6px;
+  min-height: 150px;
+  padding: 12px 14px;
+  background: var(--paper);
+  border: 2px solid var(--ink);
+}
+.read-line { margin: 0; line-height: 1.05; overflow-wrap: anywhere; }
+.read-slot { margin: 0; padding: 6px; border: 2px dashed #a0a0a0; font-family: var(--mono); font-size: 12px; color: #777; text-transform: uppercase; letter-spacing: .1em; }
+.read-tray { display: flex; flex-direction: column; gap: 6px; }
+.read-pick { min-height: 44px; padding: 4px 10px; font-size: 19px; letter-spacing: 0; text-align: left; }
+.read-pick:disabled { opacity: .35; }
+.read-reset { align-self: flex-end; min-height: 32px; font-size: 12px; }
+
+/* ---------- PICK YOUR PALETTE ---------- */
+.pal-pick { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.pal-card { display: flex; flex-direction: column; align-items: flex-start; gap: 5px; min-width: 0; min-height: 0; padding: 8px; text-align: left; }
+.pal-card .pal-swatches { width: 100%; height: 14px; display: flex; border: 1px solid var(--ink); }
+.pal-card .pal-note { font-size: 15px; }
+.pal-card.on { background: #fff; box-shadow: inset -1px -1px #fff, inset 1px 1px #0a0a0a, 0 0 0 3px var(--navy); }
+.pal-sample { display: flex; gap: 3px; font-size: 26px; line-height: 1; }
+.pal-sample span { padding: 2px 6px; box-shadow: 1px 2px 0 rgba(0, 0, 0, .25); }
+
 /* ---------- TASKBAR ---------- */
 .taskbar {
   position: fixed;

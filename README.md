@@ -43,3 +43,19 @@ own reading from your traits and carries on. Nothing waits on AI.
 
 To test the AI on your laptop, install the Vercel CLI and run `vercel dev`
 (it reads the same environment variables). `python3 serve.py` works too, just without AI.
+
+## Live rooms on campus wifi (Vercel storage)
+Campus wifi (NUS included) blocks phones from connecting to each other directly.
+So on Vercel, rooms send their messages through our own site instead (`api/room.js`),
+using a small free Redis database. Phones can always reach the website, so this works
+on any wifi. Without the database, rooms fall back to direct PeerJS connections.
+
+Set it up once:
+1. Vercel project → **Storage** tab → **Create Database** → pick **Upstash** (Redis)
+   → free plan → create, and **connect it to this project**.
+   Vercel adds the settings it needs (`KV_REST_API_URL`, `KV_REST_API_TOKEN`) by itself.
+2. **Deployments** → ⋯ on the latest → **Redeploy**.
+
+On your laptop, `python3 serve.py` runs the same relay in memory, so rooms work locally too.
+(Optional, for the direct-connection fallback only: `api/turn.js` can hand out TURN relay
+logins from Vercel settings, see the comment at the top of that file.)

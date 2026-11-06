@@ -162,9 +162,18 @@
     cy += 16;
     etched(g, ix, cy, iw);
 
-    // your 5 traits: a scale between two ends, with a marker
+    // your personality: 5 scales between two ends, markers in your palette
     cy += 24;
-    label(ctx, 'Your 5 traits', ix, cy);
+    label(ctx, 'Your personality', ix, cy);
+    const pal = W.type.palette();
+    const bright = pal.colors.filter(c => !['#111111', '#000000', '#ffffff', '#f3ead3', '#fff3d6', '#c0c0c0', '#808080'].includes(c));
+    // your palette as a little strip, top right
+    const sw = 18;
+    pal.colors.slice(0, 8).forEach((c, k) => {
+      g.fill(c); g.rect(ix + iw - (8 - k) * sw, cy - 13, sw, 14);
+    });
+    g.noFill(); g.stroke(COL.ink); g.strokeWeight(1); g.rect(ix + iw - 8 * sw - 0.5, cy - 13.5, 8 * sw + 1, 15); g.noStroke();
+    text(ctx, pal.name.toUpperCase(), ix + iw - 8 * sw - 8, cy, '400 11px "Space Mono"', '#333333', 'right', 1);
     cy += 12;
     const endW = 118, trackX = ix + endW + 8, trackW = iw - 2 * (endW + 8);
     W.TRAITS.forEach((t, i) => {
@@ -174,7 +183,8 @@
       sunken(g, trackX, cy + 4, trackW, 18);
       g.fill(COL.light); g.rect(trackX + trackW / 2 - 1, cy + 6, 2, 14); // middle line
       const mx = trackX + 3 + v * (trackW - 20);
-      g.fill(COL.navy); g.rect(mx, cy + 6, 14, 14);
+      g.fill(COL.ink); g.rect(mx - 1, cy + 5, 16, 16);
+      g.fill(bright[i % bright.length] || COL.navy); g.rect(mx, cy + 6, 14, 14);
       cy += 30;
     });
 

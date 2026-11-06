@@ -11,9 +11,10 @@
    general-purpose AI.
 
    POST /api/ai
-     { kind: 'reading', name, traits[5], type, fonts[3], pair }
+     { kind: 'questions' }                    → 10 fresh this-or-that questions
+     { kind: 'reading', name, traits[5], type, fonts[3], pair, palette }
      { kind: 'compat',  a: {name, traits, type}, b: {...}, score }
-   → { text }
+   → { text }   (for 'questions', text is JSON: { questions: [...] })
    ========================================================= */
 
 const MODEL = process.env.OPENAI_MODEL || 'gpt-4o-mini';
@@ -21,9 +22,10 @@ const LIMIT = 30;                   // requests per person...
 const WINDOW_MS = 10 * 60 * 1000;   // ...per 10 minutes
 
 const TRAITS = [
-  ['Quiet', 'Loud'], ['Freeform', 'Planner'], ['Futurist', 'Nostalgic'],
-  ['Vibes', 'Perfectionist'], ['Careful', 'Quick'],
+  ['Introvert', 'Extrovert'], ['Free spirit', 'Planner'], ['Futurist', 'Nostalgic'],
+  ['Big picture', 'Detail-obsessed'], ['Slow burner', 'Fast mover'],
 ];
+const PALETTES = ['Pop', 'Pastel', 'Complementary', 'Sunset', 'Triadic', 'Monochrome', 'Paint 95'];
 const FONTS = [
   'Playfair Display', 'Press Start 2P', 'Archivo Black', 'Anton', 'Monoton', 'Silkscreen',
   'Unbounded', 'Rubik Glitch', 'EB Garamond', 'Special Elite', 'Work Sans', 'VT323',
@@ -67,12 +69,13 @@ function buildPrompt(body) {
     const fonts = (Array.isArray(body.fonts) ? body.fonts : []).slice(0, 3).map(f => oneOf(f, FONTS));
     if (fonts.length !== 3) bad('fonts');
     const pair = oneOf(body.pair, FONTS);
+    const palette = PALETTES.includes(body.palette) ? body.palette : 'Pop';
     return (
       `Player: ${name}. Personality traits: ${describe(traits)}. ` +
       `Their design type: ${type}. Their top fonts: ${fonts.join(', ')}. ` +
-      `The font that pairs best with them: ${pair}. ` +
-      'In 2 short sentences (max 45 words): describe their design personality, ' +
-      'then give one playful, practical tip for using their fonts.'
+      `The font that pairs best with them: ${pair}. Their chosen colour palette: ${palette}. ` +
+      'In 2 short sentences (max 45 words), Gen Z tone but kind: describe their designer ' +
+      'personality (how they work and show up), then one playful tip for using their fonts.'
     );
   }
   if (body.kind === 'compat') {
@@ -90,7 +93,34 @@ function buildPrompt(body) {
       'together on a poster: who does what, and where they might clash.'
     );
   }
+  if (body.kind === 'questions') {
+    return (
+      'Write 10 quick this-or-that questions for a designer personality quiz played by ' +
+      'design students at a showcase. Gen Z tone, funny, about studio life, crits, Figma, ' +
+      'moodboards, deadlines, group projects. 2 questions for each of these 5 scales, in this order: ' +
+      TRAITS.map((t, i) => `${i + 1}) ${t[0]} vs ${t[1]}`).join('; ') + '. ' +
+      'Each question: max 34 characters. Each answer: max 30 characters. ' +
+      'Reply as JSON only: {"questions":[[["question","answer for the FIRST end","answer for the SECOND end"],' +
+      '[...]], ...5 pairs]}.'
+    );
+  }
   return bad('kind');
+}
+
+/* the questions come back as JSON: check the shape and clean every string */
+function cleanQuestions(raw) {
+  const tidy = v => String(v || '').replace(/\s*[\u2014\u2013]\s*/g, ', ').replace(/\s+/g, ' ').trim().slice(0, 60);
+  const qs = JSON.parse(raw).questions;
+  if (!Array.isArray(qs) || qs.length !== 5) bad('shape');
+  return qs.map(pair => {
+    if (!Array.isArray(pair) || pair.length < 2) bad('shape');
+    return pair.slice(0, 2).map(q => {
+      if (!Array.isArray(q) || q.length < 3) bad('shape');
+      const out = q.slice(0, 3).map(tidy);
+      if (out.some(x => !x)) bad('empty');
+      return out;
+    });
+  });
 }
 
 /* ---------- a simple per-person limit (best effort) ---------- */
@@ -121,13 +151,15 @@ module.exports = async function handler(req, res) {
   const ip = String(req.headers['x-forwarded-for'] || '').split(',')[0].trim() || 'unknown';
   if (tooMany(ip)) return res.status(429).json({ error: 'Slow down' });
 
-  let prompt;
+  let prompt, kind;
   try {
     const body = typeof req.body === 'string' ? JSON.parse(req.body || '{}') : req.body || {};
+    kind = body.kind;
     prompt = buildPrompt(body);
   } catch (e) {
     return res.status(400).json({ error: 'Bad request' });
   }
+  const isQuiz = kind === 'questions';
 
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), 9000);
@@ -138,13 +170,22 @@ module.exports = async function handler(req, res) {
       body: JSON.stringify({
         model: MODEL,
         messages: [{ role: 'system', content: SYSTEM }, { role: 'user', content: prompt }],
-        max_tokens: 120,
+        max_tokens: isQuiz ? 900 : 120,
         temperature: 0.9,
+        ...(isQuiz ? { response_format: { type: 'json_object' } } : {}),
       }),
       signal: ctrl.signal,
     });
     if (!r.ok) return res.status(502).json({ error: 'AI did not answer' });
     const data = await r.json();
+    if (isQuiz) {
+      try {
+        const questions = cleanQuestions(data.choices[0].message.content);
+        return res.status(200).json({ text: JSON.stringify({ questions }) });
+      } catch (e) {
+        return res.status(502).json({ error: 'Bad questions' });
+      }
+    }
     const text = String((data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content) || '')
       .trim()
       .replace(/\s*[—–]\s*/g, ', ')   // house rule: no em dashes

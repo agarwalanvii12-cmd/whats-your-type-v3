@@ -47,12 +47,34 @@
       `Try ${result.top3[0].font} for headlines and ${result.pair.font} for everything else.`;
   }
 
+  // check AI questions: 5 traits × 2 × [question, low answer, high answer], short strings
+  function validQuestions(qs) {
+    const ok = s => typeof s === 'string' && s.trim().length > 0 && s.length <= 60;
+    return Array.isArray(qs) && qs.length === 5 &&
+      qs.every(pair => Array.isArray(pair) && pair.length === 2 &&
+        pair.every(q => Array.isArray(q) && q.length === 3 && q.every(ok)));
+  }
+
   W.ai = {
+    /* Ask for a fresh, Gen Z-flavoured question set at the start of a game.
+       If it arrives before a challenge's questions, those are used. */
+    prepareQuestions(state) {
+      const game = state.results; // only use answers for the game that asked
+      ask({ kind: 'questions' }).then(text => {
+        if (!text || state.results !== game) return;
+        try {
+          const qs = JSON.parse(text).questions;
+          if (validQuestions(qs)) state.aiQuestions = qs;
+        } catch (e) { /* keep the pool */ }
+      });
+    },
+
     /* → { text, ai: true/false } */
     async reading(name, result) {
       const text = await ask({
         kind: 'reading', name, traits: result.traits, type: result.type.name,
         fonts: result.top3.map(f => f.font), pair: result.pair.font,
+        palette: W.type.palette().name,
       });
       return text ? { text, ai: true } : { text: localReading(name, result), ai: false };
     },
