@@ -1,6 +1,8 @@
 # What's Your Type?! (v3)
 MBTI for designers. 2 players, live, inside MS Paint.
 
+**Play it:** https://whats-your-type-v3-anvii.vercel.app
+
 Start here:
 1. `BRIEF.md`: the concept + full spec
 2. `CLAUDE.md`: rules Claude Code follows in this repo
