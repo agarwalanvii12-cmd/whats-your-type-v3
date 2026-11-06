@@ -780,7 +780,7 @@ input[type="range"]::-moz-range-thumb {
 }
 
 /* "typeface" that keeps switching fonts */
-.cycle-font { display: inline-block; min-width: 4.6em; font-style: normal; color: var(--navy); text-align: center; }
+.cycle-font { display: inline-block; min-width: 4.6em; font-style: normal; color: var(--navy); text-align: left; }
 .boot .cycle-font { color: #fff; }
 
 /* ---------- KERN (mascot), CARD WALL, AI READING ---------- */
