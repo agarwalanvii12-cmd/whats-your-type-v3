@@ -326,11 +326,11 @@
   // Each challenge feeds one trait (index into WYT.TRAITS).
   // The 2 questions after it come from the game's question set (AI or the pool).
   W.CHALLENGES = [
-    { id: 1, trait: 0, name: 'Make It Loud',   time: 25, hint: 'Drag to make it loud',   ...loud },
-    { id: 2, trait: 1, name: 'Make It Read',   time: 25, hint: 'Tap in reading order',   ...makeItRead },
-    { id: 3, trait: 2, name: 'Rapid Fire',     time: 25, hint: 'Pick fast',              ...rapidFire },
-    { id: 4, trait: 3, name: 'Even It Out',    time: 25, hint: 'Slide to even the gaps', ...evenItOut },
-    { id: 5, trait: 4, name: 'Type Your Name', time: 25, hint: 'Tap the keys',           ...typeYourName },
+    { id: 1, trait: 0, name: 'Make It Loud',   time: 25, hint: 'Drag both sliders to style it',  ...loud },
+    { id: 2, trait: 1, name: 'Make It Read',   time: 25, hint: 'Tap lines in reading order',     ...makeItRead },
+    { id: 3, trait: 2, name: 'Rapid Fire',     time: 25, hint: 'Tap the one you vibe with',      ...rapidFire },
+    { id: 4, trait: 3, name: 'Even It Out',    time: 25, hint: 'Slide letters to even the gaps', ...evenItOut },
+    { id: 5, trait: 4, name: 'Type Your Name', time: 25, hint: 'Type your name, fast',           ...typeYourName },
   ];
 
   // this game's questions: AI-written if they arrived, else 2 random from the pool
@@ -378,13 +378,15 @@
         el.append(h('div', { class: 'stack chal-stack' },
           T.sticker(`Challenge ${c.id}/5 · ${c.time}s`, c.id % 2 ? -4 : 3),
           T.ransom(c.name, 30, c.name),
+          // what this one says about you, as a question
+          T.human(`${W.TRAITS[c.trait].low.toLowerCase()} or ${W.TRAITS[c.trait].high.toLowerCase()}?`),
           h('div', { class: 'window chal-win' },
             h('div', { class: 'title-bar' },
               h('div', { class: 'title-bar-text' }, c.name),
               bar,
               h('div', { class: 'title-bar-controls' }, h('button', { 'aria-label': 'Help', 'data-bonk': true }))),
             h('div', { class: 'window-body chal-body' },
-              T.label(c.hint),
+              h('p', { class: 'chal-hint' }, c.hint),
               h('div', { class: 'chal-wrap' }, stage, count, ask, reveal))),
           h('div', { class: 'actions' }, okBtn)));
 
@@ -399,7 +401,10 @@
 
         // 3-2-1 count-in
         let n = 3;
-        const show = () => count.replaceChildren(T.ransom(String(n), 84, 'count' + n, { align: 'center', level: 2 }));
+        // the count-in shows what to do, big
+        const show = () => count.replaceChildren(h('div', { class: 'count-box' },
+          T.ransom(String(n), 72, 'count' + n, { align: 'center', level: 2 }),
+          h('p', { class: 'count-hint' }, c.hint)));
         show();
         W.sound.play('tick');
         countTimer = setInterval(() => {
@@ -412,7 +417,7 @@
           startAt = performance.now();
           endAt = startAt + c.time * 1000;
           loop();
-        }, 550);
+        }, 900);
 
         // every frame: timer, bar, challenge draw()
         const loop = () => {
@@ -457,7 +462,7 @@
             if (Math.random() < 0.5) options.reverse();
             ask.replaceChildren(
               why === 'time' && answers.length === 0 && T.sticker("Time's up", -6),
-              T.label(`Quick question ${answers.length + 1}/2`),
+              T.label(`Quick question ${answers.length + 1}/2 · no wrong answers`),
               T.human(q[0]),
               h('div', { class: 'ask-options' },
                 options.map(([text, v]) => h('button', { class: 'ask-btn', onclick: () => pick(v) }, text))));

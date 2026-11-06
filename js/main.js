@@ -209,9 +209,10 @@
 
       const head = [
         invite,
-        T.sticker('MBTI for designers', -4),
-        T.ransom("What's your type?", 40, 'lobby'),
-        T.human('draw. play. get typed.'),
+        T.sticker('Design personality test', -4),
+        T.ransom("What's your type?", 36, 'lobby'),
+        T.human('find your designer personality, and the fonts that match it.'),
+        L.status === 'idle' && howItWorks(),
       ];
       const nameField = h('div', { class: 'field' },
         h('label', { for: 'player-name', class: 'label' }, 'Your name'), input);
@@ -342,6 +343,20 @@
     modal.querySelector('.row button').focus();
   };
 
+  /* "How it works" in 3 steps (lobby + Help) */
+  function howItWorks() {
+    const steps = [
+      ['Draw yourself', '25 seconds, pixel style'],
+      ['Play 5 mini challenges', '+ 2 quick questions each'],
+      ['Get your type', 'personality, 3 fonts, friend match'],
+    ];
+    return h('ol', { class: 'how', 'aria-label': 'How it works' },
+      steps.map(([title, sub], i) => h('li', {},
+        h('span', { class: 'how-n' }, String(i + 1)),
+        h('span', { class: 'how-text' }, h('strong', {}, title), h('span', {}, sub)))));
+  }
+  W.howItWorks = howItWorks;
+
   /* ---------- PLACEHOLDERS (replaced in later steps) ---------- */
   function placeholder({ tag, tilt = -4, title, quip, box, button, onNext, enterSound, sfx }) {
     return {
@@ -392,7 +407,10 @@
         h('div', { class: 'window-body about' },
           h('img', { src: W.iconURL('heart', 8), alt: '', class: 'pixel' }),
           T.ransom("What's your type?!", 22, 'about', { align: 'center', level: 2 }),
-          T.human('MBTI, but for designers.'),
+          T.human('a personality test for designers.'),
+          howItWorks(),
+          T.label('Your 5 traits'),
+          h('p', { class: 'about-traits' }, W.TRAITS.map(t => `${t.low} or ${t.high}`).join(' · ')),
           T.sticker('ID2116 · Anvii', -3),
           h('div', { class: 'row end' }, ok))));
     document.body.append(modal);

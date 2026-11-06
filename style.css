@@ -741,6 +741,43 @@ input[type="range"]::-moz-range-thumb {
 .pal-sample { display: flex; gap: 3px; font-size: 26px; line-height: 1; }
 .pal-sample span { padding: 2px 6px; box-shadow: 1px 2px 0 rgba(0, 0, 0, .25); }
 
+/* ---------- HOW IT WORKS + INSTRUCTIONS ---------- */
+.how { display: flex; flex-direction: column; gap: 6px; margin: 0; padding: 10px 12px; list-style: none; background: var(--paper); border: 2px solid var(--ink); box-shadow: 3px 3px 0 var(--ink); }
+.how li { display: flex; align-items: center; gap: 10px; }
+.how-n {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  background: var(--navy);
+  color: #fff;
+  font-family: var(--pixel);
+  font-size: 14px;
+  transform: rotate(-4deg);
+}
+.how li:nth-child(2) .how-n { transform: rotate(3deg); background: #ff4fa3; color: var(--ink); }
+.how li:nth-child(3) .how-n { transform: rotate(-2deg); background: #ffd23f; color: var(--ink); }
+.how-text { display: flex; flex-direction: column; line-height: 1.2; }
+.how-text strong { font-family: var(--mono); font-size: 14px; text-transform: uppercase; letter-spacing: .06em; }
+.how-text span { font-family: var(--serif); font-style: italic; font-size: 17px; color: #333; }
+.about .how { align-self: stretch; text-align: left; }
+.about-traits { margin: 0; font-family: var(--mono); font-size: 12px; line-height: 1.5; }
+
+.chal-hint { margin: 0; font-family: var(--mono); font-size: 15px; font-weight: 700; }
+.count-box { display: flex; flex-direction: column; align-items: center; gap: 12px; padding: 12px; }
+.count-hint {
+  margin: 0;
+  padding: 6px 12px;
+  background: #fff;
+  border: 2px solid var(--ink);
+  box-shadow: 3px 3px 0 var(--ink);
+  font-family: var(--mono);
+  font-size: 16px;
+  font-weight: 700;
+  text-align: center;
+}
+
 /* ---------- TASKBAR ---------- */
 .taskbar {
   position: fixed;

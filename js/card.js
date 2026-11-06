@@ -315,6 +315,7 @@
         T.sticker('You are', -4),
         title,
         T.human(type.line),
+        T.label('Your personality picked these fonts'),
         box,
         note,
         isIOS() && T.label('Tip: long-press the card to save'),

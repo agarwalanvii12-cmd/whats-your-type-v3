@@ -221,7 +221,7 @@
         h('div', { class: 'draw-head' },
           T.ransom('Draw yourself', 34, 'Draw yourself'),
           T.sticker(`${SECONDS} seconds`, 5)),
-        T.human('you are the mascot.'),
+        T.human('draw your face. it goes on your Type Card.'),
         h('div', { class: 'draw-area' }, tools, holder),
         h('div', { class: 'palette-bar' }, current, grid),
         h('div', { class: 'actions' }, doneBtn),
@@ -315,7 +315,9 @@
 
       /* ----- 3-2-1, then go ----- */
       const showCount = n => {
-        overlay.replaceChildren(T.ransom(String(n), 96, 'count' + n, { align: 'center', level: 2 }));
+        overlay.replaceChildren(h('div', { class: 'count-box' },
+          T.ransom(String(n), 84, 'count' + n, { align: 'center', level: 2 }),
+          h('p', { class: 'count-hint' }, 'Draw your face!')));
       };
       W.setTimer(SECONDS);
       let n = COUNT_IN;
