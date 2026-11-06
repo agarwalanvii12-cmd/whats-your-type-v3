@@ -210,13 +210,13 @@
         invite,
         T.sticker('Design personality test', -4),
         T.ransom("What's your type?", 32, 'lobby'),
+        // the pun, right under the title
+        h('p', { class: 'human pun lobby-pun' },
+          h('span', { class: 'pun-1' }, 'not your dating type lol'),
+          h('span', { class: 'pun-2' }, 'your own ', h('span', { class: 'cycle-font' }, 'typeface'))),
         h('div', { class: 'lobby-intro' },
           W.mascot("hi, i'm Remi. i'll type up your type."),
-          h('div', {},
-            h('p', { class: 'human pun' },
-              h('span', { class: 'pun-1' }, 'not your dating type lol'),
-              h('span', { class: 'pun-2' }, 'your ', h('span', { class: 'cycle-font' }, 'typeface'))),
-            T.label('Find your design personality + fonts'))),
+          T.label('Find your design personality + fonts')),
         L.status === 'idle' && howItWorks(),
       ];
       const nameField = h('div', { class: 'field' },

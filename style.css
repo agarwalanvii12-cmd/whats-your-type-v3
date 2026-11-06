@@ -840,7 +840,7 @@ input[type="range"]::-moz-range-thumb {
 .lobby-intro { display: flex; flex-direction: column; gap: 6px; }
 .lobby-intro .tw-img { width: 56px; }
 .lobby-intro .kern-say { font-size: 12px; padding: 5px 9px; }
-.lobby-intro .human { font-size: 22px; }
+.lobby-pun { margin-top: -6px; font-size: 24px; }
 .how { gap: 4px; padding: 8px 12px; }
 .how-text span { font-size: 16px; }
 .lobby-intro .label { margin-top: 4px; }
