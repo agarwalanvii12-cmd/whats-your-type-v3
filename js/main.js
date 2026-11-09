@@ -4,8 +4,8 @@
 
    Every screen is an object { enter(el, state), exit() }.
    enter() draws the screen into the Paint window (el).
-   Other files can register real screens on WYT.screens
-   before this file runs; anything missing gets a placeholder.
+   Other files register their screens on WYT.screens before
+   this file runs.
 
    Dev shortcut: open index.html#draw (or #card etc.) to
    skip straight to that screen.
@@ -361,42 +361,6 @@
         h('span', { class: 'how-text' }, h('strong', {}, title), h('span', {}, sub)))));
   }
   W.howItWorks = howItWorks;
-
-  /* ---------- PLACEHOLDERS (replaced in later steps) ---------- */
-  function placeholder({ tag, tilt = -4, title, quip, box, button, onNext, enterSound, sfx }) {
-    return {
-      enter(el) {
-        if (enterSound) W.sound.play(enterSound);
-        el.append(h('div', { class: 'stack' },
-          T.sticker(tag, tilt),
-          T.ransom(title, 40, title),
-          quip && T.human(quip),
-          h('div', { class: 'placeholder' }, box()),
-          T.magButton(h('button', { class: 'big', 'data-sfx': sfx, onclick: onNext || (() => W.next()) }), button),
-        ));
-      },
-    };
-  }
-
-  const fallbacks = {
-    draw: placeholder({
-      tag: '15 seconds', title: 'Draw yourself', quip: 'you are the mascot.',
-      box: () => T.label('24 × 24 canvas soon'), button: 'Done',
-    }),
-    compat: placeholder({
-      tag: 'You × friend', tilt: 3, title: 'Compatibility', quip: 'a classic pairing?',
-      box: () => T.label('% match soon'), button: 'Play again', onNext: () => W.go('lobby'),
-    }),
-  };
-  W.CHALLENGES.forEach(c => {
-    fallbacks['challenge' + c.id] = placeholder({
-      tag: `Challenge ${c.id}/5 · ${c.time}s`, tilt: c.id % 2 ? -4 : 3,
-      title: c.name, quip: c.quip, box: () => T.label(c.hint), button: 'OK', sfx: 'ding',
-    });
-  });
-  for (const [name, scr] of Object.entries(fallbacks)) {
-    if (!W.screens[name]) W.screens[name] = scr;
-  }
 
   /* ---------- ABOUT DIALOG ---------- */
   function openAbout() {

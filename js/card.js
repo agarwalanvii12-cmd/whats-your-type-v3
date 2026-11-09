@@ -64,34 +64,6 @@
     return lines;
   }
 
-  /* ---------- ransom tiles on canvas ---------- */
-  function drawTiles(ctx, word, x, y, size) {
-    let cx = x;
-    for (const t of word) {
-      const px = size * t.em;
-      const font = `${t.font.style} ${t.font.weight} ${px}px ${t.font.family}`;
-      ctx.font = font;
-      const tw = Math.max(ctx.measureText(t.glyph).width, px * 0.45) + size * 0.28;
-      const th = size * 1.22;
-      ctx.save();
-      ctx.translate(cx + tw / 2, y + th / 2 + t.dy * size);
-      ctx.rotate((t.rot * Math.PI) / 180);
-      ctx.shadowColor = 'rgba(0,0,0,.25)';
-      ctx.shadowOffsetX = 2; ctx.shadowOffsetY = 4; ctx.shadowBlur = 8;
-      ctx.fillStyle = t.bg;
-      ctx.fillRect(-tw / 2, -th / 2, tw, th);
-      ctx.shadowColor = 'transparent';
-      ctx.fillStyle = t.ink;
-      ctx.font = font;
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.scale(1, t.font.sy || 1);
-      ctx.fillText(t.glyph, 0, size * 0.05);
-      ctx.restore();
-      cx += tw + size * 0.08;
-    }
-  }
-
   /* ---------- the card ---------- */
   function drawCard(g, d) {
     const ctx = g.drawingContext;

@@ -224,7 +224,7 @@
     const h = W.h;
     return h('div', { class: 'mascot' },
       h('img', { class: 'tw-img', src: W.iconURL('tw1', scale), 'data-scale': scale, alt: 'Remi, a pixel typewriter with a smile' }),
-      say && h('p', { class: 'kern-say' }, say));
+      say && h('p', { class: 'mascot-say' }, say));
   };
 
   /* "typeface" keeps changing typeface: cycles through the 18 type fonts */
