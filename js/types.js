@@ -131,6 +131,17 @@
     return W.TRAITS.map((t, i) => clamp01((results[i + 1] ? clamp01(results[i + 1].trait) : 0.5) + nudge[i]));
   };
 
+  /* One trait's score. Half the challenge, a quarter per question. The voice
+     check counts as a third answer on Energy; skipped, the formula is unchanged.
+     No randomness: the same answers always give the same trait. */
+  W.VOICE_VALUE = { introvert: 0, ambivert: 0.5, extrovert: 1 };
+  W.traitScore = function (part, answers, voice) {
+    const v = W.VOICE_VALUE[voice];
+    return v === undefined
+      ? 0.5 * part + 0.25 * answers[0] + 0.25 * answers[1]
+      : 0.4 * part + 0.2 * answers[0] + 0.2 * answers[1] + 0.2 * v;
+  };
+
   // "Loud" or "Quiet" for one trait value
   W.traitWord = (i, v) => (v >= 0.5 ? W.TRAITS[i].high : W.TRAITS[i].low);
   W.traitLine = (i, v) => (v >= 0.5 ? W.TRAITS[i].highLine : W.TRAITS[i].lowLine);

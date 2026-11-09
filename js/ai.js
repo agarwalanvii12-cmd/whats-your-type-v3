@@ -75,6 +75,7 @@
         kind: 'reading', name, traits: result.traits, type: result.type.name,
         fonts: result.top3.map(f => f.font), pair: result.pair.font,
         palette: W.type.palette().name,
+        voice: W.state.results.voice ? W.state.results.voice.answer : null,
       });
       return text ? { text, ai: true } : { text: localReading(name, result), ai: false };
     },

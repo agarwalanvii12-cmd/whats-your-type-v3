@@ -12,7 +12,7 @@
 
    POST /api/ai
      { kind: 'questions' }                    → 10 fresh this-or-that questions
-     { kind: 'reading', name, traits[5], type, fonts[3], pair, palette }
+     { kind: 'reading', name, traits[5], type, fonts[3], pair, palette, voice }
      { kind: 'compat',  a: {name, traits, type}, b: {...}, score }
    → { text }   (for 'questions', text is JSON: { questions: [...] })
    ========================================================= */
@@ -26,6 +26,7 @@ const TRAITS = [
   ['Big picture', 'Detail-obsessed'], ['Slow burner', 'Fast mover'],
 ];
 const PALETTES = ['Pop', 'Pastel', 'Complementary', 'Sunset', 'Triadic', 'Monochrome', 'Paint 95'];
+const VOICES = ['introvert', 'ambivert', 'extrovert'];
 const FONTS = [
   'Playfair Display', 'Press Start 2P', 'Archivo Black', 'Anton', 'Monoton', 'Silkscreen',
   'Unbounded', 'Rubik Glitch', 'EB Garamond', 'Special Elite', 'Work Sans', 'VT323',
@@ -70,10 +71,11 @@ function buildPrompt(body) {
     if (fonts.length !== 3) bad('fonts');
     const pair = oneOf(body.pair, FONTS);
     const palette = PALETTES.includes(body.palette) ? body.palette : 'Pop';
+    const voice = VOICES.includes(body.voice) ? `Their "say hello" vibe check sounded ${body.voice}. ` : '';
     return (
       `Player: ${name}. Personality traits: ${describe(traits)}. ` +
       `Their design type: ${type}. Their fonts: headline ${fonts[0]}, subheader ${fonts[1]}, body text ${fonts[2]}. ` +
-      `The font that pairs best with them: ${pair}. Their chosen colour palette: ${palette}. ` +
+      `The font that pairs best with them: ${pair}. Their chosen colour palette: ${palette}. ${voice}` +
       'In 2 short sentences (max 45 words), Gen Z tone but kind: describe their designer ' +
       'personality (how they work and show up), then one playful tip for using their fonts.'
     );

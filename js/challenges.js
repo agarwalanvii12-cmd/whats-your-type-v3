@@ -495,7 +495,8 @@
             phase = 'done';
             const i = c.trait;
             result.answers = answers;
-            result.trait = round2(clamp(0.5 * result.part + 0.25 * answers[0] + 0.25 * answers[1], 0, 1));
+            const voice = c.trait === 0 && state.results.voice ? state.results.voice.answer : null;
+            result.trait = round2(clamp(W.traitScore(result.part, answers, voice), 0, 1));
             state.results[c.id] = result;
 
             const word = W.traitWord(i, result.trait);
