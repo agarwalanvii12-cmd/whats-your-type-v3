@@ -796,6 +796,19 @@ input[type="range"]::-moz-range-thumb {
 .ask-body .human { font-size: 24px; }
 .ask-body .label { opacity: .7; }
 
+/* ---------- CAMERA PORTRAIT ---------- */
+.cam-modal { position: fixed; inset: 0; z-index: 88; display: grid; place-items: center; padding: 12px; background: rgba(0, 0, 0, .35); }
+.cam-win { width: min(320px, 100%); }
+.cam-body { display: flex; flex-direction: column; gap: 8px; margin: 0; padding: 10px; }
+.cam-view { position: relative; aspect-ratio: 1; line-height: 0; background: #000; box-shadow: inset 1px 1px #808080, 0 0 0 2px var(--ink); }
+.cam-view canvas { display: block; width: 100% !important; height: 100% !important; }
+.cam-overlay { position: absolute; inset: 0; display: grid; place-items: center; line-height: 1.2; pointer-events: none; }
+.cam-status { min-height: 1.35em; text-align: center; }
+.cam-buttons button { min-height: 46px; }
+.cam-error { display: grid; grid-template-columns: auto 1fr; gap: 12px; align-items: center; padding: 6px; font-family: var(--mono); font-weight: 700; }
+.cam-error img { width: 42px; height: 39px; }
+.cam-error p { margin: 0; }
+
 /* ---------- TASKBAR ---------- */
 .taskbar {
   position: fixed;

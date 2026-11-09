@@ -8,6 +8,9 @@
 
    Undo button (or Cmd/Ctrl+Z) steps back one stroke.
    Leave the canvas empty and you get one of 3 default smileys.
+   Snap (camera-portrait.js) fills the canvas with a pixel portrait.
+
+   Phases: countin → drawing ⇄ camera → locked
 
    The drawing is saved as WYT.state.avatar: 576 numbers,
    one per pixel, row by row. Each number is a position in
@@ -230,6 +233,32 @@
         onclick: () => (phase === 'locked' ? W.advance() : finish('done')),
       }), 'Done', 'draw-done');
 
+      // Snap: the clock pauses while the camera window is open, and the
+      // portrait lands on the canvas as one undoable step to paint over.
+      const snapBtn = T.magButton(h('button', {
+        class: 'big', disabled: true,
+        onclick: () => {
+          if (phase !== 'drawing') return;
+          const openedAt = performance.now();
+          const left = endsAt - openedAt;
+          phase = 'camera';
+          W.cameraPortrait.open({
+            onDone: portrait => {
+              if (phase !== 'camera') return;
+              startedAt += performance.now() - openedAt; // camera time doesn't count
+              endsAt = performance.now() + left;
+              phase = 'drawing';
+              if (portrait) {
+                remember(cells.slice());
+                cells.splice(0, cells.length, ...portrait);
+                state.avatarSnapped = true;
+                dirty = true;
+              }
+            },
+          });
+        },
+      }), '📷 Snap', 'draw-snap');
+
       el.append(h('div', { class: 'stack draw-stack' },
         h('div', { class: 'draw-head' },
           T.ransom('Draw yourself', 34, 'Draw yourself'),
@@ -237,7 +266,7 @@
         T.human('draw your face. it goes on your Type Card.'),
         h('div', { class: 'draw-area' }, tools, holder),
         h('div', { class: 'palette-bar' }, current, grid),
-        h('div', { class: 'actions' }, doneBtn),
+        h('div', { class: 'actions' }, h('div', { class: 'row' }, snapBtn, doneBtn)),
       ));
 
       /* ----- p5 sketch: draws the grid ----- */
@@ -344,6 +373,7 @@
         overlay.hidden = true;
         W.sound.play('click');
         phase = 'drawing';
+        snapBtn.disabled = false;
         startedAt = performance.now();
         endsAt = startedAt + SECONDS * 1000;
       }, 700);
@@ -357,6 +387,7 @@
         dirty = true;
         holder.classList.add('locked');
         undoBtn.disabled = true;
+        snapBtn.disabled = true;
         W.setTimer(why === 'time' ? 0 : Math.max(0, (endsAt - performance.now()) / 1000));
         if (why === 'time') W.fx.shake();
 
@@ -374,6 +405,7 @@
           colors: new Set(cells.filter(c => c >= 0)).size,
           ranOut: why === 'time',
           defaultFace: empty,
+          snapped: !!state.avatarSnapped,
           undos,
         };
 
@@ -405,6 +437,7 @@
 
     exit() {
       clearInterval(this.countTimer);
+      W.cameraPortrait.close();
       document.removeEventListener('keydown', this.onKey);
       if (this.p5) { this.p5.remove(); this.p5 = null; }
       W.setTimer(null);

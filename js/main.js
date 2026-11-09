@@ -34,6 +34,7 @@
     W.state.avatar = null;
     W.state.results = {};
     W.state.card = null;
+    W.state.avatarSnapped = false; // came from the camera at any point this game
     W.state.questions = null;      // 2 random pool questions per trait (picked when needed)
     W.state.aiQuestions = null;    // fresh AI-written ones, if they arrive in time
     if (W.ai) W.ai.prepareQuestions(W.state);
