@@ -809,6 +809,11 @@ input[type="range"]::-moz-range-thumb {
 .cam-error img { width: 42px; height: 39px; }
 .cam-error p { margin: 0; }
 
+/* ---------- VOICE CHECK ---------- */
+.vibe-canvas { line-height: 0; box-shadow: 0 0 0 2px var(--ink); }
+.vibe-canvas canvas { display: block; width: 100% !important; height: auto !important; }
+.vibe-status { min-height: 1.35em; }
+
 /* ---------- TASKBAR ---------- */
 .taskbar {
   position: fixed;

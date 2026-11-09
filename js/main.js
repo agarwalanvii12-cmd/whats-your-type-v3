@@ -1,6 +1,20 @@
 /* =========================================================
    main.js · screen state machine + desktop, taskbar, boot
-   Flow: boot → lobby → draw → challenge1..5 → card → compat
+
+   States and transitions (W.go / W.next, in ORDER below):
+     boot        → lobby        tap to start
+     lobby       → draw         Play solo, or the host's Start
+     lobby       → compat       Compare a code, or a friend's link
+     draw        → hello        Done, or Next after time runs out
+     hello       → challenge1   after a voice or tapped answer, or Skip
+     challenge1..5 → next one   Next, after the 2 quick questions
+     challenge5  → palette
+     palette     → card
+     card        → compat       Compare
+     compat      → lobby        Lobby, Play again, Rematch (rooms)
+     compat      → draw         Rematch (solo)
+   In a room the host moves both players along the same order
+   (ROUNDS in net.js). Any screen → lobby or boot from the Start menu.
 
    Every screen is an object { enter(el, state), exit() }.
    enter() draws the screen into the Paint window (el).
@@ -17,12 +31,12 @@
   const $ = sel => document.querySelector(sel);
 
   const ORDER = [
-    'boot', 'lobby', 'draw',
+    'boot', 'lobby', 'draw', 'hello',
     'challenge1', 'challenge2', 'challenge3', 'challenge4', 'challenge5',
     'palette', 'card', 'compat',
   ];
   const LABELS = {
-    boot: 'Boot', lobby: 'Lobby', draw: 'Draw yourself',
+    boot: 'Boot', lobby: 'Lobby', draw: 'Draw yourself', hello: 'Vibe check',
     challenge1: 'Challenge 1', challenge2: 'Challenge 2', challenge3: 'Challenge 3',
     challenge4: 'Challenge 4', challenge5: 'Challenge 5',
     palette: 'Palette', card: 'Type Card', compat: 'Compatibility',

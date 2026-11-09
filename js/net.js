@@ -236,7 +236,7 @@
   }
   const START_DELAY = 1200;                    // ms between "Start" and everyone starting
   const HEARTBEAT = 2500, SILENCE = 9000;      // ping often; this long without a word = gone
-  const ROUNDS = ['draw', 'challenge1', 'challenge2', 'challenge3', 'challenge4', 'challenge5', 'palette', 'card'];
+  const ROUNDS = ['draw', 'hello', 'challenge1', 'challenge2', 'challenge3', 'challenge4', 'challenge5', 'palette', 'card'];
 
   const newCode = () => Array.from({ length: 4 }, () => LETTERS[Math.floor(Math.random() * LETTERS.length)]).join('');
 
