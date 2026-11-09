@@ -154,7 +154,7 @@
     // same structure, precision and pace (you'd share a grid and a rhythm)
     const ideal = [1 - traits[0], traits[1], 1 - traits[2], traits[3], traits[4]];
     const pair = W.rankFonts(ideal).find(f => !top3.some(t => t.font === f.font));
-    return { traits, type: top3[0], top3, pair };
+    return { traits, type: ranked[0], top3, pair };   // type = closest font of all 18
   };
 
   /* ---------- Compatibility between two people (max 100) ----------
