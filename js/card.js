@@ -103,7 +103,7 @@
     g.noStroke();
     (d.avatar || []).forEach((c, i) => {
       if (c < 0) return;
-      g.fill(W.PAINT28[c]);
+      g.fill(W.avatarColor(c));
       g.rect(ix + 4 + (i % 24) * scale, cy + 4 + Math.floor(i / 24) * scale, scale, scale);
     });
 

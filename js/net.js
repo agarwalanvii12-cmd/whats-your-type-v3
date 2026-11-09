@@ -6,9 +6,10 @@
    text code (and a QR of a link with that code in it).
 
    What's inside, byte by byte:
-     1  version (2)
+     1  version (2, or 3 when the avatar has non-Paint colours)
      1+ name: length, then UTF-8 bytes (max 12 characters)
      3  your 5 traits, 4 bits each (0..15), last 4 bits unused
+     v3 only: 1 colour count, then 3 bytes (RGB) per colour
      …  avatar, run-length packed: each byte = 3 bits "how many
         in a row" (1..8) + 5 bits "which colour" (0 = empty)
      1  checksum, so a broken paste is caught
@@ -18,7 +19,6 @@
   'use strict';
   const W = (window.WYT = window.WYT || {});
   const CELLS = 24 * 24;
-  const VERSION = 2;
 
   const clamp01 = v => Math.max(0, Math.min(1, v || 0));
 
@@ -33,9 +33,34 @@
     return Array.from(bin, c => c.charCodeAt(0));
   }
 
+  /* A snapped portrait can use colours outside the 28 Paint colours, but a run
+     byte only has room for 31 colours. So version 3 lists the colours this avatar
+     uses (most-used first); any beyond 31 merge into their closest listed colour. */
+  const MAX_TABLE = 31;
+  const rgbOf = hex => [1, 3, 5].map(i => parseInt(hex.slice(i, i + 2), 16));
+  function colourTable(cells) {
+    const counts = new Map();
+    cells.forEach(v => { if (v >= 0) counts.set(v, (counts.get(v) || 0) + 1); });
+    const used = [...counts.keys()].sort((a, b) => counts.get(b) - counts.get(a));
+    const kept = used.slice(0, MAX_TABLE);
+    const slot = new Map(kept.map((v, i) => [v, i]));
+    used.slice(MAX_TABLE).forEach(v => {
+      const c = rgbOf(W.avatarColor(v));
+      let best = 0, bestD = Infinity;
+      kept.forEach((k, i) => {
+        const d = rgbOf(W.avatarColor(k)).reduce((sum, x, j) => sum + (x - c[j]) ** 2, 0);
+        if (d < bestD) { bestD = d; best = i; }
+      });
+      slot.set(v, best);
+    });
+    return { kept, slot };
+  }
+
   /* card: { name, traits: [5 numbers 0..1], avatar } → "Ag..." */
   function encode(card) {
-    const bytes = [VERSION];
+    const cells = card.avatar && card.avatar.length === CELLS ? card.avatar : new Array(CELLS).fill(-1);
+    const extended = cells.some(v => v > 27);   // only snapped portraits need v3
+    const bytes = [extended ? 3 : 2];
 
     const name = new TextEncoder().encode([...(card.name || 'Anon')].slice(0, 12).join(''));
     bytes.push(name.length, ...name);
@@ -44,11 +69,17 @@
     while (q.length < 6) q.push(0);
     bytes.push((q[0] << 4) | q[1], (q[2] << 4) | q[3], (q[4] << 4) | q[5]);
 
-    const cells = card.avatar && card.avatar.length === CELLS ? card.avatar : new Array(CELLS).fill(-1);
+    let packed = cells;
+    if (extended) {
+      const { kept, slot } = colourTable(cells);
+      bytes.push(kept.length);
+      kept.forEach(v => bytes.push(...rgbOf(W.avatarColor(v))));
+      packed = cells.map(v => (v < 0 ? -1 : slot.get(v)));
+    }
     for (let i = 0; i < CELLS;) {
-      const v = cells[i];
+      const v = packed[i];
       let run = 1;
-      while (i + run < CELLS && cells[i + run] === v && run < 8) run++;
+      while (i + run < CELLS && packed[i + run] === v && run < 8) run++;
       bytes.push(((run - 1) << 5) | (v + 1));
       i += run;
     }
@@ -71,7 +102,8 @@
       if (b.reduce((a, x) => (a + x) & 255, 0) !== check) return null;
 
       let p = 0;
-      if (b[p++] !== VERSION) return null;
+      const version = b[p++];
+      if (version !== 2 && version !== 3) return null;
 
       const len = b[p++];
       if (len > 48) return null;
@@ -82,11 +114,27 @@
       for (let k = 0; k < 3; k++) { q.push(b[p] >> 4, b[p] & 15); p++; }
       const traits = q.slice(0, 5).map(n => n / 15);
 
+      // v3: the colours this avatar uses come first
+      let table = null;
+      if (version === 3) {
+        const n = b[p++];
+        if (n > MAX_TABLE) return null;
+        table = [];
+        for (let k = 0; k < n; k++, p += 3) {
+          const hex = '#' + [b[p], b[p + 1], b[p + 2]].map(x => x.toString(16).padStart(2, '0')).join('');
+          table.push(W.avatarColorIndex(hex));
+        }
+      }
+
       const avatar = [];
       while (avatar.length < CELLS && p < b.length) {
-        const run = (b[p] >> 5) + 1, v = (b[p] & 31) - 1;
+        const run = (b[p] >> 5) + 1;
+        let v = (b[p] & 31) - 1;
         p++;
-        if (v > 27) return null;
+        if (table) {
+          if (v >= table.length) return null;
+          if (v >= 0) v = table[v];
+        } else if (v > 27) return null;
         for (let k = 0; k < run; k++) avatar.push(v);
       }
       if (avatar.length !== CELLS || p !== b.length) return null;

@@ -11,7 +11,8 @@
 
    The drawing is saved as WYT.state.avatar: 576 numbers,
    one per pixel, row by row. Each number is a position in
-   WYT.PAINT28 (0..27), or -1 for an empty (white) pixel.
+   WYT.AVATAR_COLORS (0..27 are the Paint colours), or -1 for
+   an empty (white) pixel.
    ========================================================= */
 (function () {
   'use strict';
@@ -30,6 +31,18 @@
   ];
   const ROW_A = W.PAINT28.slice(0, 14), ROW_B = W.PAINT28.slice(14);
 
+  /* Every colour an avatar pixel can be. Numbers 0..27 are the Paint colours
+     above (all a drawing ever uses); snapped portraits also use the colours of
+     the Colors palettes, which are added after them, in a fixed order. */
+  W.AVATAR_COLORS = W.PAINT28.slice();
+  W.avatarColorIndex = function (hex) {
+    let i = W.AVATAR_COLORS.indexOf(hex);
+    if (i < 0) i = W.AVATAR_COLORS.push(hex) - 1;
+    return i;
+  };
+  W.avatarColor = i => W.AVATAR_COLORS[i] || '#ffffff';
+  W.type.PALETTES.forEach(p => p.colors.forEach(W.avatarColorIndex));
+
   // Turn an avatar into a picture (used later by the Type Card and compat screens)
   W.avatarCanvas = function (avatar, scale = 4) {
     const cv = document.createElement('canvas');
@@ -39,7 +52,7 @@
     ctx.fillRect(0, 0, cv.width, cv.height);
     (avatar || []).forEach((c, i) => {
       if (c < 0) return;
-      ctx.fillStyle = W.PAINT28[c];
+      ctx.fillStyle = W.avatarColor(c);
       ctx.fillRect((i % SIZE) * scale, Math.floor(i / SIZE) * scale, scale, scale);
     });
     return cv;
@@ -298,7 +311,7 @@
           p.noStroke();
           for (let i = 0; i < cells.length; i++) {
             if (cells[i] < 0) continue;
-            p.fill(W.PAINT28[cells[i]]);
+            p.fill(W.avatarColor(cells[i]));
             p.rect((i % SIZE) * cell, Math.floor(i / SIZE) * cell, cell, cell);
           }
           // faint grid while drawing, gone once locked
