@@ -101,7 +101,7 @@ mostly anatomy. Only the final word is stored. It's a playful guess, not science
 - **Photo:** processed in the browser only. The camera stops the moment the snap is taken.
   It is never sent to the AI or stored on a server.
 - **Rooms:** the other player receives only the 24×24 grid of colour numbers.
-- **Card Wall:** a snapped portrait is swapped for a smiley when pinned.
+- **Card Wall:** pinning is your choice. A pinned card stores only the 24×24 grid of colours, never the photo.
 - **Voice:** audio is never recorded or sent. Only introvert, ambivert or extrovert leaves `voice-check.js`.
 
 ## How data flows

@@ -301,7 +301,7 @@
 
       // pin to the Card Wall (opt-in): your card then shows in the screensaver
       const pinMsg = h('span', { class: 'label pin-msg', 'aria-live': 'polite' },
-        state.avatarSnapped ? 'Your snap stays private: pins as a smiley' : '');
+        state.avatarSnapped ? 'Pinning shares your pixel portrait' : '');
       const pin = T.magButton(h('button', {
         class: 'pin-btn',
         onclick: async () => {
@@ -309,9 +309,8 @@
           pinMsg.textContent = 'pinning...';
           const ok = await fetch('api/gallery', {
             method: 'POST', headers: { 'Content-Type': 'application/json' },
-            // a snapped portrait stays off the server: a smiley goes on the wall instead
             body: JSON.stringify({
-              share: state.avatarSnapped ? W.net.encode({ name, traits, avatar: W.DEFAULT_FACES[0] }) : state.share,
+              share: state.share, // name, traits and the 24×24 colour grid. Never the photo.
             }),
           }).then(r => r.ok).catch(() => false);
           pinMsg.textContent = ok ? 'Pinned! Watch for it on the wall.' : "Couldn't pin. Try again.";
