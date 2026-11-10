@@ -234,7 +234,8 @@
           T.label('Find your design personality + fonts')),
         L.status === 'idle' && howItWorks(),
       ];
-      const nameField = h('div', { class: 'field' },
+      const pinned = L.status === 'idle' && !this.joinOpen;
+      const nameField = h('div', { class: pinned ? 'field name-inline' : 'field' },
         h('label', { for: 'player-name', class: 'label' }, 'Your name'), input);
 
       let body;
@@ -243,15 +244,17 @@
       } else if (this.joinOpen) {
         body = [nameField, this.joinPanel(myName)];
       } else {
+        // name + start buttons live in the pinned bar, so they're never cut off
         body = [
-          nameField,
-          solo,
-          h('div', { class: 'row' },
-            T.magButton(h('button', { onclick: () => L.host(myName()) }), 'Create room', 'create'),
-            T.magButton(h('button', { onclick: () => { this.joinOpen = true; this.render(); } }), 'Join room', 'join')),
-          L.error && h('p', { class: 'label error' }, L.error),
           enterCode,
-        ];
+          h('div', { class: 'actions' },
+            L.error && h('p', { class: 'label error' }, L.error),
+            nameField,
+            solo,
+            h('div', { class: 'row' },
+              T.magButton(h('button', { onclick: () => L.host(myName()) }), 'Create room', 'create'),
+              T.magButton(h('button', { onclick: () => { this.joinOpen = true; this.render(); } }), 'Join room', 'join'))),
+        ].filter(Boolean);
       }
       el.append(h('div', { class: 'stack' }, head, body));
     },

@@ -327,7 +327,7 @@
         title,
         T.human(type.line),
         note,
-        T.label('Your personality picked these fonts'),
+        T.label('Picked for your personality'),
         box,
         h('div', { class: 'pin-row' }, pin, pinMsg),
         isIOS() && T.label('Tip: long-press the card to save'),
