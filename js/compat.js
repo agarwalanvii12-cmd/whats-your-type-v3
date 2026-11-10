@@ -111,6 +111,10 @@
           this.render();
         },
       }), 'Compare', 'compare-go');
+      // green once the box holds a code that really decodes
+      const codeReady = () => compare.classList.toggle('ready', !!W.net.decode(input.value));
+      input.addEventListener('input', codeReady);
+      codeReady();
 
       this.el.append(h('div', { class: 'stack compat-stack' },
         T.sticker('Compare by code', -4),

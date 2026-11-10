@@ -322,6 +322,7 @@
       const title = T.ransom(shortName(type), 48, 'type' + type.font);
       title.classList.add('waiting');
 
+      next.classList.add('ready');
       el.append(h('div', { class: 'stack card-stack' },
         T.sticker('You are', -4),
         title,

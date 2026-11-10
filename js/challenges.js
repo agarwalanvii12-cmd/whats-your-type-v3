@@ -1,5 +1,6 @@
 /* =========================================================
-   challenges.js · the 5 timed challenges
+   challenges.js · timed challenges 2 to 5
+   (Challenge 1 is the "say hello" voice check in voice-check.js.)
 
    Each challenge is an object:
      setup(stage, api)  build its UI inside the dialog
@@ -25,41 +26,6 @@
   const round1 = n => Math.round(n * 10) / 10;
   const round2 = n => Math.round(n * 100) / 100;
   const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
-
-  /* ======================================================
-     1 · MAKE IT LOUD (10s)
-     Weight + size sliders on a poster headline.
-     high weight + size → B (Bold), else L (Light)
-     ====================================================== */
-  const loud = {
-    setup(stage, api) {
-      const { h, data: d } = api;
-      const word = h('span', { class: 'loud-word' }, 'HELLO');
-      const poster = h('div', { class: 'loud-poster' }, word);
-      const slider = (label, min, max, value) => {
-        const input = h('input', { type: 'range', min, max, value, step: 1, 'aria-label': label });
-        return { input, row: h('label', { class: 'slider-row' }, h('span', { class: 'label' }, label), input) };
-      };
-      const wt = slider('Weight', 100, 900, 300);
-      const sz = slider('Size', 0, 100, 25);
-      stage.append(poster, wt.row, sz.row);
-
-      d.wt = wt.input; d.sz = sz.input; d.moves = 0;
-      const update = () => {
-        const max = Math.min(130, poster.clientWidth / 3.9);
-        word.style.fontWeight = wt.input.value;
-        word.style.fontSize = 16 + (max - 16) * (sz.input.value / 100) + 'px';
-      };
-      [wt.input, sz.input].forEach(i => i.addEventListener('input', () => { d.moves++; update(); }));
-      update();
-      requestAnimationFrame(update);
-    },
-    score({ data: d }) {
-      const weight = +d.wt.value, size = +d.sz.value;
-      const loudness = ((weight - 100) / 800 + size / 100) / 2; // 0 quiet .. 1 very loud
-      return { part: loudness, weight, size, loudness: round2(loudness), moves: d.moves };
-    },
-  };
 
   /* ======================================================
      2 · MAKE IT READ (25s)  · visual hierarchy
@@ -179,55 +145,61 @@
   };
 
   /* ======================================================
-     4 · EVEN IT OUT (25s) · word spacing
-     "MIND THE GAP" set with lumpy spaces between the words.
-     Slide the words left/right; the bars under each gap turn
-     green when the gaps match. Even spacing → Detail-obsessed,
-     left lumpy → Big picture.
+     4 · KERN IT (45s) · how you work, more than what you make
+     Drag the letters of TYPES until the gaps look even. The score
+     is mostly how long you keep refining, so eyeballing it and
+     moving on reads as Big picture, fussing over every gap reads
+     as Detail-obsessed. The clock stops at your last adjustment,
+     so sitting and waiting doesn't count as care.
      ====================================================== */
-  const WORDS = ['MIND', 'THE', 'GAP'];
-  const START_GAPS = [0.12, 1.15];   // in em: lumpy on purpose
-  const EVEN_TOLERANCE = 0.12;       // gaps within this (em) of the average count as even
+  const KERN_WORD = [...'TYPES'];
+  const KERN_START_GAPS = [0.02, 0.62, 0.08, 0.45]; // in em: lumpy on purpose
+  const KERN_EVEN = 0.06;       // a gap within this (em) of the average counts as even
+  const KERN_QUICK = 6;         // last adjustment by this second: eyeballed it
+  const KERN_SLOW = 30;         // still adjusting at this second: obsessed
+  const KERN_MANY_MOVES = 12;   // this many adjustments counts as a lot
+  const KERN_EYEBALLED = 0.33;  // part below this: the "eyeballed" style
+  const KERN_OBSESSED = 0.66;   // part from this up: the "obsessed" style
 
-  const evenItOut = {
+  const kernIt = {
     setup(stage, api) {
       const { h, data: d } = api;
       const box = h('div', { class: 'kern-box' });
       stage.append(box);
-      const fontPx = Math.min(56, Math.floor(stage.clientWidth / 9.6));
+      const fontPx = Math.min(64, Math.floor(stage.clientWidth / 5.4));
       box.style.fontSize = fontPx + 'px';
       box.style.height = Math.round(fontPx * 2.1) + 'px';
 
-      const n = WORDS.length;
-      d.words = WORDS.map(w => h('span', { class: 'kern-letter kern-word' }, w));
-      d.bars = WORDS.slice(1).map(() => h('i', { class: 'kern-bar' }));
-      box.append(...d.words, ...d.bars);
-      Object.assign(d, { box, fontPx, n, moves: 0, ready: false, x: [], w: [] });
+      const n = KERN_WORD.length;
+      d.letters = KERN_WORD.map(c => h('span', { class: 'kern-letter' }, c));
+      d.bars = KERN_WORD.slice(1).map(() => h('i', { class: 'kern-bar' }));
+      box.append(...d.letters, ...d.bars);
+      Object.assign(d, { box, fontPx, n, moves: 0, lastAt: 0, ready: false, x: [], w: [] });
 
       const gapsPx = () => d.bars.map((_, j) => d.x[j + 1] - (d.x[j] + d.w[j]));
       const render = () => {
-        d.words.forEach((el, i) => { el.style.left = d.x[i] + 'px'; });
+        d.letters.forEach((el, i) => { el.style.left = d.x[i] + 'px'; });
         const gaps = gapsPx();
         const mean = gaps.reduce((a, b) => a + b, 0) / gaps.length;
         d.bars.forEach((b, j) => {
           b.style.left = d.x[j] + d.w[j] + 'px';
           b.style.width = Math.max(3, gaps[j]) + 'px';
-          b.classList.toggle('ok', Math.abs(gaps[j] - mean) <= EVEN_TOLERANCE * fontPx);
+          b.classList.toggle('ok', Math.abs(gaps[j] - mean) <= KERN_EVEN * fontPx);
         });
       };
 
       const place = () => {
-        d.w = d.words.map(el => el.offsetWidth);
-        const total = d.w.reduce((a, b) => a + b, 0) + START_GAPS.reduce((a, b) => a + b, 0) * fontPx;
+        d.w = d.letters.map(el => el.offsetWidth);
+        const total = d.w.reduce((a, b) => a + b, 0) + KERN_START_GAPS.reduce((a, b) => a + b, 0) * fontPx;
         let x = Math.max(0, (box.clientWidth - total) / 2);
-        d.words.forEach((el, i) => { d.x[i] = x; x += d.w[i] + (START_GAPS[i] || 0) * fontPx; });
+        d.letters.forEach((el, i) => { d.x[i] = x; x += d.w[i] + (KERN_START_GAPS[i] || 0) * fontPx; });
         d.ready = true;
         render();
       };
-      // wait for the font, so word widths are measured correctly
+      // wait for the font, so letter widths are measured correctly
       document.fonts.load(`900 ${fontPx}px "Playfair Display"`).then(place, place);
 
-      d.words.forEach((el, i) => {
+      d.letters.forEach((el, i) => {
         let start = null;
         el.addEventListener('pointerdown', e => {
           if (!api.active || !d.ready) return;
@@ -243,7 +215,14 @@
           d.x[i] = clamp(start.x + (e.clientX - start.px), min, max);
           render();
         });
-        const drop = () => { if (start) { start = null; d.moves++; el.classList.remove('dragging'); } };
+        const drop = () => {
+          if (!start) return;
+          start = null;
+          d.moves++;
+          d.lastAt = api.elapsed();
+          el.classList.remove('dragging');
+          api.ready();
+        };
         el.addEventListener('pointerup', drop);
         el.addEventListener('pointercancel', drop);
       });
@@ -251,11 +230,16 @@
     score({ data: d }) {
       const gaps = d.ready
         ? d.bars.map((_, j) => (d.x[j + 1] - (d.x[j] + d.w[j])) / d.fontPx)
-        : START_GAPS.slice();
-      const spread = Math.max(...gaps) - Math.min(...gaps);
-      const evenness = clamp(1 - spread / 0.8, 0, 1);
-      return { part: evenness, evenness: round2(evenness), gaps: gaps.map(round2), moves: d.moves };
+        : KERN_START_GAPS.slice();
+      const evenness = clamp(1 - (Math.max(...gaps) - Math.min(...gaps)) / 0.8, 0, 1);
+      const pace = clamp((d.lastAt - KERN_QUICK) / (KERN_SLOW - KERN_QUICK), 0, 1);
+      const fuss = clamp(d.moves / KERN_MANY_MOVES, 0, 1);
+      // time matters most. Never touching the letters is pure eyeballing.
+      const part = d.moves ? 0.6 * pace + 0.2 * fuss + 0.2 * evenness : 0;
+      const style = part >= KERN_OBSESSED ? 'obsessed' : part < KERN_EYEBALLED ? 'eyeballed' : 'balanced';
+      return { part, style, spent: round1(d.lastAt), evenness: round2(evenness), gaps: gaps.map(round2), moves: d.moves };
     },
+    detail: r => (r.moves ? `kerned for ${r.spent}s · ${r.moves} move${r.moves === 1 ? '' : 's'}` : 'left it as it was'),
   };
 
   /* ======================================================
@@ -331,10 +315,9 @@
   // Each challenge feeds one trait (index into WYT.TRAITS).
   // The 2 questions after it come from the game's question set (AI or the pool).
   W.CHALLENGES = [
-    { id: 1, trait: 0, name: 'Make It Loud',   time: 25, hint: 'Drag both sliders to style it',  ...loud },
     { id: 2, trait: 1, name: 'Make It Read',   time: 25, hint: 'Tap lines in reading order',     ...makeItRead },
     { id: 3, trait: 2, name: 'Rapid Fire',     time: 25, hint: 'Tap the one you vibe with',      ...rapidFire },
-    { id: 4, trait: 3, name: 'Even It Out',    time: 25, hint: 'Slide words to even the gaps',   ...evenItOut },
+    { id: 4, trait: 3, name: 'Kern It',        time: 45, hint: 'Drag letters till gaps look even', ...kernIt },
     { id: 5, trait: 4, name: 'Type Your Name', time: 25, hint: 'Type your name, fast',           ...typeYourName },
   ];
 
@@ -344,6 +327,38 @@
     if (!state.questions) state.questions = W.pickQuestions();
     return state.questions[trait];
   }
+
+  /* ----- the 2 quick questions, shared with the voice check -----
+     A Win95 window pinned to the bottom of the screen (on <body>), so
+     it can never be hidden or scrolled away. Calls done(answers). */
+  const quickSheet = () => W.h('div', { class: 'window ask-sheet', role: 'dialog', 'aria-label': 'Quick question' });
+  function nudgeSheet(ask) {
+    if (!ask.isConnected) document.body.append(ask);
+    ask.classList.remove('nudge'); void ask.offsetWidth; ask.classList.add('nudge');
+  }
+  function askQuestions(ask, state, trait, timesUp, done) {
+    const h = W.h, T = W.type, answers = [];
+    const askNext = () => {
+      const q = questionsFor(state, trait)[answers.length];
+      if (!q) { ask.remove(); done(answers); return; }
+      const pick = v => { answers.push(v); askNext(); };
+      const options = [[q[1], 0], [q[2], 1]];
+      if (Math.random() < 0.5) options.reverse();
+      ask.replaceChildren(
+        h('div', { class: 'title-bar' },
+          h('div', { class: 'title-bar-text' }, `Quick question ${answers.length + 1}/2`)),
+        h('div', { class: 'window-body ask-body' }, ...[ // (skip empty bits, or they'd print as "false")
+          timesUp && answers.length === 0 && T.sticker("Time's up", -6),
+          T.human(q[0]),
+          h('div', { class: 'ask-options' },
+            options.map(([text, v]) => h('button', { class: 'ask-btn', onclick: () => pick(v) }, text))),
+          T.label('No wrong answers'),
+        ].filter(Boolean)));
+      if (!ask.isConnected) document.body.append(ask);
+    };
+    askNext();
+  }
+  W.quickQuestions = { sheet: quickSheet, ask: askQuestions, nudge: nudgeSheet };
 
   /* A scale between the two ends of a trait, with a marker where you are.
      Shared with the card and compat screens. */
@@ -374,19 +389,14 @@
         const stage = h('div', { class: 'chal-stage waiting' });
         const count = h('div', { class: 'chal-count' });
         const reveal = h('div', { class: 'chal-reveal', hidden: true });
-        // the quick questions pop up as a Win95 window pinned to the bottom of
-        // the screen (on <body>), so they can never be hidden or scrolled away
-        const ask = h('div', { class: 'window ask-sheet', role: 'dialog', 'aria-label': 'Quick question' });
+        const ask = quickSheet();
         this.ask = ask;
         const okBtn = T.magButton(h('button', {
           class: 'big', 'data-sfx': 'none',
           onclick: () => {
             if (phase === 'done') W.advance();
             else if (phase === 'play') end('done');
-            else if (phase === 'ask') { // safety net: bring the question back into view
-              if (!ask.isConnected) document.body.append(ask);
-              ask.classList.remove('nudge'); void ask.offsetWidth; ask.classList.add('nudge');
-            }
+            else if (phase === 'ask') nudgeSheet(ask); // safety net: bring the question back into view
           },
         }), 'OK', 'ok' + c.id);
 
@@ -410,6 +420,7 @@
           get active() { return phase === 'play'; },
           elapsed: () => (startAt ? (performance.now() - startAt) / 1000 : 0),
           finish: () => { if (phase === 'play') end('done'); },
+          ready: () => okBtn.classList.add('ready'), // turns OK green
         };
         c.setup(stage, api);
         W.setTimer(c.time);
@@ -470,33 +481,14 @@
 
           // 2 quick questions, then the trait reveal
           T.magButton(okBtn, 'Answer the question', 'pick' + c.id);
-          const answers = [];
-          const askNext = () => {
-            const q = questionsFor(state, c.trait)[answers.length];
-            if (!q) { ask.remove(); finish(); return; }
-            const pick = v => { if (phase !== 'ask') return; answers.push(v); askNext(); };
-            const options = [[q[1], 0], [q[2], 1]];
-            if (Math.random() < 0.5) options.reverse();
-            ask.replaceChildren(
-              h('div', { class: 'title-bar' },
-                h('div', { class: 'title-bar-text' }, `Quick question ${answers.length + 1}/2`)),
-              h('div', { class: 'window-body ask-body' }, ...[ // (skip empty bits, or they'd print as "false")
-                why === 'time' && answers.length === 0 && T.sticker("Time's up", -6),
-                T.human(q[0]),
-                h('div', { class: 'ask-options' },
-                  options.map(([text, v]) => h('button', { class: 'ask-btn', onclick: () => pick(v) }, text))),
-                T.label('No wrong answers'),
-              ].filter(Boolean)));
-            if (!ask.isConnected) document.body.append(ask);
-          };
-          askNext();
+          okBtn.classList.remove('ready');
+          askQuestions(ask, state, c.trait, why === 'time', finish);
 
-          function finish() {
+          function finish(answers) {
             phase = 'done';
             const i = c.trait;
             result.answers = answers;
-            const voice = c.trait === 0 && state.results.voice ? state.results.voice.answer : null;
-            result.trait = round2(clamp(W.traitScore(result.part, answers, voice), 0, 1));
+            result.trait = round2(clamp(W.traitScore(result.part, answers), 0, 1));
             state.results[c.id] = result;
 
             const word = W.traitWord(i, result.trait);
@@ -509,6 +501,7 @@
             ].filter(Boolean));
             reveal.hidden = false;
             okBtn.disabled = false;
+            okBtn.classList.add('ready');
             T.magButton(okBtn, 'Next', 'next' + c.id);
             W.sound.play('ding');
             // live room: send my answer, show theirs, and let the host move us on

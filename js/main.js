@@ -6,8 +6,9 @@
      lobby       → draw         Play solo, or the host's Start
      lobby       → compat       Compare a code, or a friend's link
      draw        → hello        Done, or Next after time runs out
-     hello       → challenge1   after a voice or tapped answer, or Skip
-     challenge1..5 → next one   Next, after the 2 quick questions
+     hello       → challenge2   Next, after the voice and 2 quick questions
+                                (hello is Challenge 1, the Energy trait)
+     challenge2..5 → next one   Next, after the 2 quick questions
      challenge5  → palette
      palette     → card
      card        → compat       Compare
@@ -32,12 +33,12 @@
 
   const ORDER = [
     'boot', 'lobby', 'draw', 'hello',
-    'challenge1', 'challenge2', 'challenge3', 'challenge4', 'challenge5',
+    'challenge2', 'challenge3', 'challenge4', 'challenge5',
     'palette', 'card', 'compat',
   ];
   const LABELS = {
-    boot: 'Boot', lobby: 'Lobby', draw: 'Draw yourself', hello: 'Vibe check',
-    challenge1: 'Challenge 1', challenge2: 'Challenge 2', challenge3: 'Challenge 3',
+    boot: 'Boot', lobby: 'Lobby', draw: 'Draw yourself', hello: 'Challenge 1',
+    challenge2: 'Challenge 2', challenge3: 'Challenge 3',
     challenge4: 'Challenge 4', challenge5: 'Challenge 5',
     palette: 'Palette', card: 'Type Card', compat: 'Compatibility',
   };
@@ -212,6 +213,10 @@
         },
       }), 'Play solo');
       input.addEventListener('keydown', e => { if (e.key === 'Enter') solo.click(); });
+      // Play solo turns green once there's a name
+      const nameReady = () => solo.classList.toggle('ready', input.value.trim() !== '');
+      input.addEventListener('input', nameReady);
+      nameReady();
 
       // Opened a friend's link before playing? Say who's waiting.
       const invite = state.friend && h('div', { class: 'invite' },
@@ -314,7 +319,7 @@
             h('li', {}, h('strong', {}, L.me), ` (you, ${you})`),
             h('li', {}, h('strong', {}, L.opp || '...'), ` (${them})`)),
           L.role === 'host'
-            ? T.magButton(h('button', { class: 'big', disabled: !L.opp, onclick: () => L.startRound('draw') }), 'Start', 'start')
+            ? T.magButton(h('button', { class: 'big ready', disabled: !L.opp, onclick: () => L.startRound('draw') }), 'Start', 'start')
             : T.human(`waiting for ${L.opp || 'the host'} to start.`),
         ];
       }

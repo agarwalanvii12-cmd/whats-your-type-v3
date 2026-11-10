@@ -1,15 +1,16 @@
 /* =========================================================
-   voice-check.js · the "say hello" vibe check (p5.js + p5.sound)
+   voice-check.js · Challenge 1, "say hello" (p5.js + p5.sound)
 
-   The mic moves the HELLO poster and a Win95 level meter, then the
-   reading becomes ONE discrete answer: introvert, ambivert or
-   extrovert. Only that word reaches the quiz, stored in
-   state.results.voice like a button answer, so the same answers
-   always give the same result. Audio never leaves this file.
+   The mic moves the HELLO poster, its sliders and a Win95 level
+   meter, then the reading becomes ONE discrete answer: introvert,
+   ambivert or extrovert. Only that word reaches the quiz, stored
+   like a button answer, so the same answers always give the same
+   result. Then the 2 quick Energy questions. Audio never leaves
+   this file.
 
    States:
-     loading → ready → starting → room → listening → confirm → done
-     ready → tap → done                  (Tap instead)
+     loading → ready → starting → room → listening → confirm → asking → done
+     ready → tap → asking                (Tap instead, or Skip)
      starting / room / listening → tap   (denied, silence, noise)
      tap → starting                      (Try mic again)
    ========================================================= */
@@ -32,6 +33,8 @@
   const MIN_CLARITY = 0.6;        // how periodic a frame must be to have a pitch
   const NEAR_BEST = 0.9;          // prefer the shortest lag this close to the best
   const METER_FULL = 0.25;        // level that fills the meter
+  const REST_QUIET = 250, REST_LOUD = 800;   // where Weight settles after the reading
+  const REST_FLAT = 36, REST_EXPRESSIVE = 58; // where Size settles (px)
 
   const P5_SOUND = 'https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.11.1/addons/p5.sound.min.js';
 
@@ -136,7 +139,7 @@
       let mic = null, amp = null, fft = null, sketch = null;
       let phaseAt = 0, floorLevels = [], levels = [], frames = 0, pitches = [];
       let shownLevel = 0, weight = 300, size = 40; // eased values for the poster
-      let targetSize = 40, sent = false;
+      let targetSize = 40, restWeight = null;
 
       const holder = h('div', { class: 'vibe-canvas' });
       const status = h('p', { class: 'chal-hint vibe-status', 'aria-live': 'polite' }, 'Warming up the mic...');
@@ -146,14 +149,16 @@
       };
       const wt = slider('Weight'), sz = slider('Size');
       const actions = h('div', { class: 'actions' });
+      const reveal = h('div', { class: 'chal-reveal', hidden: true });
 
       el.append(h('div', { class: 'stack chal-stack' },
-        T.sticker('Vibe check', -4),
+        T.sticker('Challenge 1/5 · vibe check', -4),
         T.ransom('Say hello', 30, 'say hello'),
         T.human('we guess your energy. purely for fun.'),
         h('div', { class: 'window chal-win' },
           h('div', { class: 'title-bar' }, h('div', { class: 'title-bar-text' }, 'Sound Recorder')),
-          h('div', { class: 'window-body chal-body' }, status, holder, wt.row, sz.row)),
+          h('div', { class: 'window-body chal-body' }, status,
+            h('div', { class: 'chal-wrap' }, h('div', { class: 'chal-stage' }, holder, wt.row, sz.row), reveal))),
         actions));
 
       /* every choice lives in the pinned bar, so nothing can hide off screen */
@@ -171,7 +176,7 @@
       function showReady() {
         phase = 'ready';
         say('Say hello. Watch it react.');
-        setActions([['Tap instead', () => showTap('choice'), { 'data-vibe': 'tap' }], ['🎤 Say hello', startMic, { 'data-vibe': 'mic' }]]);
+        setActions([['Tap instead', () => showTap('choice'), { 'data-vibe': 'tap' }], ['🎤 Say hello', startMic, { 'data-vibe': 'mic', class: 'big ready' }]]);
       }
 
       function showTap(why) {
@@ -188,6 +193,7 @@
       function startMic() {
         if (!sketch) return showTap('unavailable');
         phase = 'starting';
+        restWeight = null;
         say('Allow the mic...');
         setActions([['Tap instead', () => showTap('choice'), { 'data-vibe': 'tap' }]]);
         try {
@@ -218,7 +224,14 @@
         stopMic();
         const read = classify({ floor, levels, frames, pitches });
         if (read.status !== 'ok') return showTap(read.status);
+        settle(read);
         confirm(read);
+      }
+
+      // Rest the sliders where this reading belongs: the player never drags them.
+      function settle(read) {
+        restWeight = read.loudness === 'loud' ? REST_LOUD : REST_QUIET;
+        targetSize = read.pitch === 'expressive' ? REST_EXPRESSIVE : REST_FLAT;
       }
 
       // Show the reading and let them fix it: noisy rooms and misreads happen.
@@ -229,28 +242,48 @@
         say(`Sounds like: ${read.loudness} & ${read.pitch}. That right?`);
         setActions([
           [`Nah, I'm ${other}`, () => finish({ loudness: other, pitch: read.pitch, source: 'override' }), { 'data-vibe': 'nah' }],
-          ['Yep', () => finish({ loudness: read.loudness, pitch: read.pitch, source: 'mic' }), { 'data-vibe': 'yep' }],
+          ['Yep', () => finish({ loudness: read.loudness, pitch: read.pitch, source: 'mic' }), { 'data-vibe': 'yep', class: 'big ready' }],
         ]);
       }
 
-      // Store the one discrete answer, then move on. null means skipped.
+      // Store the one discrete answer, then the 2 questions. null means skipped.
       function finish(read) {
-        phase = 'done';
+        phase = 'asking';
         stopMic();
-        if (read) state.results.voice = { ...read, answer: answerFor(read.loudness, read.pitch) };
-        else delete state.results.voice;
+        if (read) {
+          state.results.voice = { ...read, answer: answerFor(read.loudness, read.pitch) };
+          settle(read);
+          W.sound.play('ding');
+        } else {
+          delete state.results.voice;
+        }
         say(read ? `Noted: ${state.results.voice.answer} energy.` : 'Skipped. No judgement.');
-        if (read) W.sound.play('ding');
-        const next = T.magButton(h('button', {
-          class: 'big', 'data-sfx': 'none',
-          onclick: () => {
-            if (sent) W.advance();
-            else if (W.live.active) { sent = true; W.live.roundDone('hello', { answer: read && state.results.voice.answer }, { nextBtn: next }); }
-            else W.next();
-          },
-        }), 'Next', 'vibe-next');
+        const Q = W.quickQuestions, ask = (self.ask = Q.sheet());
+        setActions([['Answer the question', () => Q.nudge(ask), { 'data-vibe': 'answer' }]]);
+        Q.ask(ask, state, 0, false, answers => complete(read, answers));
+      }
+
+      // Same shape as every other challenge: the voice is the "challenge" half.
+      // Skipped? The two questions decide on their own.
+      function complete(read, answers) {
+        phase = 'done';
+        const voice = read ? state.results.voice.answer : null;
+        const part = read ? W.VOICE_VALUE[voice] : (answers[0] + answers[1]) / 2;
+        const trait = Math.round(W.traitScore(part, answers) * 100) / 100;
+        const result = { part, answers, trait, voice, source: read ? read.source : 'skip' };
+        state.results[1] = result;
+
+        const word = W.traitWord(0, trait);
+        reveal.replaceChildren(
+          T.label(W.TRAITS[0].name),
+          T.ransom(word, 52, 'reveal1' + word, { align: 'center', level: 2 }),
+          W.spectrum(0, trait),
+          T.human(W.traitLine(0, trait)));
+        reveal.hidden = false;
+        const next = T.magButton(h('button', { class: 'big ready', 'data-sfx': 'none', onclick: () => W.advance() }), 'Next', 'vibe-next');
         actions.replaceChildren(next);
-        if (W.live.active) next.click(); // tell the room straight away
+        W.sound.play('ding');
+        W.live.roundDone('hello', result, { nextBtn: next, reveal }); // live room: the host moves us on
       }
 
       /* ----- p5: the poster and the meter ----- */
@@ -291,9 +324,10 @@
 
             // ease everything so the poster breathes instead of jittering
             shownLevel = p.lerp(shownLevel, Math.min(1, level / METER_FULL), 0.35);
-            if (phase === 'room' || phase === 'listening') {
-              weight = p.lerp(weight, 100 + 800 * shownLevel, 0.3);
-              size = p.lerp(size, targetSize, 0.2);
+            const live = phase === 'room' || phase === 'listening';
+            if (live || restWeight !== null) {
+              weight = p.lerp(weight, live ? 100 + 800 * shownLevel : restWeight, live ? 0.3 : 0.12);
+              size = p.lerp(size, targetSize, live ? 0.2 : 0.12);
               wt.input.value = ((weight - 100) / 8).toFixed(0);
               sz.input.value = (((size - 26) / 40) * 100).toFixed(0);
             }
@@ -333,6 +367,7 @@
     exit() {
       this.token = null;
       if (this.stop) this.stop();
+      if (this.ask) { this.ask.remove(); this.ask = null; }
       if (this.p5) { this.p5.remove(); this.p5 = null; }
     },
   };

@@ -19,7 +19,7 @@
       let sent = false; // live room: my pick has gone to the friend
 
       const next = T.magButton(h('button', {
-        class: 'big', disabled: !picked,
+        class: picked ? 'big ready' : 'big', disabled: !picked,
         onclick: () => {
           if (!picked) return;
           if (sent) { W.advance(); return; }           // host moves both players on
@@ -40,6 +40,7 @@
             state.results.palette = p.id;
             T.setPalette(p.id);
             next.disabled = false;
+            next.classList.add('ready');
             render();
           },
         },

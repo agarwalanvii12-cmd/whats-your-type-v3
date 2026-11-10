@@ -251,7 +251,7 @@
               if (portrait) {
                 remember(cells.slice());
                 cells.splice(0, cells.length, ...portrait);
-                state.avatarSnapped = true;
+                state.avatarSnapped = true; doneBtn.classList.add('ready');
                 dirty = true;
               }
             },
@@ -279,7 +279,7 @@
       const paint = i => {
         const v = tool === 'eraser' ? -1 : color;
         if (cells[i] === v) return;
-        if (pending) { remember(pending); pending = null; }
+        if (pending) { remember(pending); pending = null; doneBtn.classList.add('ready'); }
         cells[i] = v;
         dirty = true;
       };
@@ -307,7 +307,7 @@
             const i = cellAt(e);
             if (tool === 'fill') {
               const before = cells.slice();
-              if (flood(cells, i, color)) { remember(before); dirty = true; strokes++; }
+              if (flood(cells, i, color)) { remember(before); dirty = true; strokes++; doneBtn.classList.add('ready'); }
               return;
             }
             pending = cells.slice();
@@ -422,12 +422,12 @@
           W.sound.play(why === 'time' ? 'bonk' : 'ding');
           overlay.hidden = false;
           overlay.replaceChildren(T.sticker("Here's a smile", -6));
-          T.magButton(doneBtn, 'Next', 'draw-next');
+          doneBtn.classList.add('ready'); T.magButton(doneBtn, 'Next', 'draw-next');
         } else if (why === 'time') {
           W.sound.play('bonk');
           overlay.hidden = false;
           overlay.replaceChildren(T.sticker("Time's up", -8));
-          T.magButton(doneBtn, 'Next', 'draw-next');
+          doneBtn.classList.add('ready'); T.magButton(doneBtn, 'Next', 'draw-next');
         } else {
           W.sound.play('ding');
           W.next();

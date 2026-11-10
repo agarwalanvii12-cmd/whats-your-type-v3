@@ -23,8 +23,8 @@ js/
   net.js                share codes and live rooms
   draw.js               self-portrait drawing tool (p5.js)
   camera-portrait.js    webcam to pixel-art portrait (p5.js)
-  voice-check.js        "say hello" vibe check (p5.js + p5.sound)
-  challenges.js         the 5 challenges and their quick questions
+  voice-check.js        Challenge 1, the "say hello" vibe check (p5.js + p5.sound)
+  challenges.js         challenges 2 to 5 and the quick questions
   ai.js                 browser side of the AI write-ups
   palette.js            colour palette pick
   card.js               the Type Card (p5.js)
@@ -52,33 +52,38 @@ meter, and the Type Card image. The other screens are HTML and CSS.
 | `lobby` | `draw` | Play solo, or the host's Start |
 | `lobby` | `compat` | Compare a code, or a friend's link |
 | `draw` | `hello` | Done, or Next after time runs out |
-| `hello` | `challenge1` | after a voice or tapped answer, or Skip |
-| `challenge1` to `challenge5` | the next one | Next, after the 2 quick questions |
+| `hello` (Challenge 1) | `challenge2` | Next, after the voice and 2 quick questions |
+| `challenge2` to `challenge5` | the next one | Next, after the 2 quick questions |
 | `challenge5` | `palette` | Next |
 | `palette` | `card` | Next |
 | `card` | `compat` | Compare |
 | `compat` | `lobby` | Lobby, Play again, or Rematch in a room |
 | `compat` | `draw` | Rematch in solo |
 
-In a room the host moves both players through `draw`, `hello`, `challenge1` to `challenge5`,
+In a room the host moves both players through `draw`, `hello`, `challenge2` to `challenge5`,
 `palette` and `card` (`ROUNDS` in `js/net.js`), once both have finished the round.
 The Start menu can jump to `lobby` or `boot` from any screen.
 
 Two screens have their own inner states, listed at the top of each file:
 - **Camera** (`camera-portrait.js`): requesting, preview, countdown, captured, error, done.
-- **Voice** (`voice-check.js`): loading, ready, starting, room, listening, confirm, tap, done.
+- **Voice** (`voice-check.js`): loading, ready, starting, room, listening, confirm, tap, asking, done.
 
 ## How answers become a result
 All of this runs in the browser and has no randomness, so the same answers always give the same result.
 
 1. Each trait is `0.5 × challenge + 0.25 × question 1 + 0.25 × question 2`.
-2. **Energy with a voice answer** is `0.4 × challenge + 0.2 × question 1 + 0.2 × question 2 + 0.2 × voice`,
-   where introvert is 0, ambivert is 0.5, extrovert is 1. Skipping the voice keeps the formula in step 1.
+2. **Energy** has no slider challenge. The voice is its challenge half: introvert is 0, ambivert is 0.5,
+   extrovert is 1. Skipping the voice lets the two questions decide on their own.
 3. The palette pick adds a small nudge to the traits.
 4. `W.resultFor(traits)` ranks the 18 fonts by distance from the traits. The closest one is your type.
 
 The AI only writes words about a result that is already decided. Two parts do vary between
 plays: the quick questions (AI or a shuffled pool) and the wording of the reading.
+
+## Kern It, in short
+Challenge 4 scores how you work: `0.6 × time + 0.2 × number of adjustments + 0.2 × evenness`.
+Time runs from the start to your last adjustment, between 6 and 30 seconds, so waiting doesn't count.
+The code measures this. The result (eyeballed, balanced or obsessed) is then one word the AI gets.
 
 ## The voice check, in short
 Thresholds are named constants at the top of `js/voice-check.js`.
@@ -104,7 +109,7 @@ User           draws or snaps, says hello, plays challenges, answers questions
   ↓
 p5 frontend    js/ turns each answer into numbers, then W.resultFor(traits) picks the type
   ↓            POST /api/ai with checked data only: name, 5 numbers, type, font names,
-  ↓            palette, voice word. Never the photo or the audio.
+  ↓            palette, voice word, kerning style. Never the photo or the audio.
 API route      api/ai.js checks each value against an allowlist and builds the prompt
   ↓
 LLM            OpenAI (gpt-4o-mini by default) writes 2 short sentences
@@ -125,9 +130,11 @@ You are the voice of a retro Windows 95 style typography personality quiz at a d
 
 **Reading** (under the Type Card):
 ```
-Player: ${name}. Personality traits: ${describe(traits)}. Their design type: ${type}. Their fonts: headline ${fonts[0]}, subheader ${fonts[1]}, body text ${fonts[2]}. The font that pairs best with them: ${pair}. Their chosen colour palette: ${palette}. ${voice}In 2 short sentences (max 45 words), Gen Z tone but kind: describe their designer personality (how they work and show up), then one playful tip for using their fonts.
+Player: ${name}. Personality traits: ${describe(traits)}. Their design type: ${type}. Their fonts: headline ${fonts[0]}, subheader ${fonts[1]}, body text ${fonts[2]}. The font that pairs best with them: ${pair}. Their chosen colour palette: ${palette}. ${voice}${kern}In 2 short sentences (max 45 words), Gen Z tone but kind: describe their designer personality (how they work and show up), then one playful tip for using their fonts.
 ```
 `${voice}` is `Their "say hello" vibe check sounded ${body.voice}. `, or empty if it was skipped.
+`${kern}` is `Given a kerning task, they ${phrase}. `, where the phrase is `eyeballed it and moved on`,
+`tidied the gaps at a steady pace` or `obsessed over every single gap`.
 
 **Compatibility** (compare screen):
 ```

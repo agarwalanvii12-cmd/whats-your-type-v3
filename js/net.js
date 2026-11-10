@@ -236,7 +236,7 @@
   }
   const START_DELAY = 1200;                    // ms between "Start" and everyone starting
   const HEARTBEAT = 2500, SILENCE = 9000;      // ping often; this long without a word = gone
-  const ROUNDS = ['draw', 'hello', 'challenge1', 'challenge2', 'challenge3', 'challenge4', 'challenge5', 'palette', 'card'];
+  const ROUNDS = ['draw', 'hello', 'challenge2', 'challenge3', 'challenge4', 'challenge5', 'palette', 'card'];
 
   const newCode = () => Array.from({ length: 4 }, () => LETTERS[Math.floor(Math.random() * LETTERS.length)]).join('');
 
@@ -572,8 +572,7 @@
 
       // show what they picked next to yours
       if (theirs !== undefined && u.reveal && !u.reveal.querySelector('.opp-answer')) {
-        const id = Number(String(r).replace('challenge', ''));
-        const c = W.CHALLENGES[id - 1];
+        const c = r === 'hello' ? { trait: 0 } : W.CHALLENGES.find(x => 'challenge' + x.id === r);
         if (c && Number.isFinite(theirs.trait)) {
           const word = W.traitWord(c.trait, theirs.trait);
           u.reveal.append(Object.assign(T.sticker(`${this.opp}: ${word}`, 3), { className: 'sticker pill opp-answer' }));
@@ -582,10 +581,11 @@
 
       // the Next button: only the host moves everyone on, once both are done
       if (u.nextBtn) {
-        if (!this.active) { u.nextBtn.disabled = false; T.magButton(u.nextBtn, 'Next', 'next-solo'); return; }
+        if (!this.active) { u.nextBtn.disabled = false; u.nextBtn.classList.add('ready'); T.magButton(u.nextBtn, 'Next', 'next-solo'); return; }
         if (this.role === 'host') {
           const both = theirs !== undefined;
           u.nextBtn.disabled = !both;
+          u.nextBtn.classList.toggle('ready', both);
           T.magButton(u.nextBtn, both ? 'Next' : `Waiting for ${this.opp}`, 'host-next' + both);
         } else {
           u.nextBtn.disabled = true;

@@ -451,16 +451,6 @@ input[type="range"]::-moz-range-thumb {
   box-shadow: inset -1px -1px #0a0a0a, inset 1px 1px #fff, inset -2px -2px #808080, inset 2px 2px #dfdfdf;
 }
 
-/* 1 · Make It Loud */
-.loud-poster {
-  display: grid;
-  place-items: center;
-  height: 150px;
-  overflow: hidden;
-  background: var(--paper);
-  border: 2px solid var(--ink);
-}
-.loud-word { font-family: "Work Sans", sans-serif; line-height: 1; letter-spacing: -.02em; }
 
 /* 3 · Rapid Fire */
 .rf-count { text-align: center; }
@@ -468,7 +458,7 @@ input[type="range"]::-moz-range-thumb {
 .rf-btn { min-width: 0; min-height: 120px; padding: 6px; line-height: 1.1; letter-spacing: 0; }
 .rf-or { font-family: var(--serif); font-style: italic; font-size: 24px; }
 
-/* 4 · Even It Out */
+/* 4 · Kern It */
 .kern-box { position: relative; overflow: hidden; background: var(--paper); border: 2px solid var(--ink); }
 .kern-letter {
   position: absolute;
@@ -482,7 +472,6 @@ input[type="range"]::-moz-range-thumb {
   -webkit-user-select: none;
 }
 .kern-letter.dragging { color: var(--navy); }
-.kern-word { padding: 0 .02em; white-space: nowrap; }
 .kern-bar { position: absolute; top: 1.28em; height: 12px; background: #ff3b30; border: 1px solid var(--ink); }
 .kern-bar.ok { background: #00a86b; }
 
@@ -847,6 +836,18 @@ input[type="range"]::-moz-range-thumb {
 /* smaller QR, so the code and the friend's box come up sooner */
 .compat-stack .qr img { width: min(180px, 48vw); }
 
+/* ---------- GREEN = PRESS THIS NOW ---------- */
+button.ready:not(:disabled) {
+  background: #3fd46c !important;
+  box-shadow: 0 0 0 2px var(--ink), inset -1px -1px #0a0a0a, inset 1px 1px #d6ffe2, inset -2px -2px #1e8a41, inset 2px 2px #9ff0b8 !important;
+  animation: ready-pop .3s steps(3) 1;
+}
+button.ready:not(:disabled):active {
+  box-shadow: 0 0 0 2px var(--ink), inset -1px -1px #d6ffe2, inset 1px 1px #0a0a0a, inset -2px -2px #9ff0b8, inset 2px 2px #1e8a41 !important;
+}
+@keyframes ready-pop { 50% { transform: scale(1.03); } }
+@media (prefers-reduced-motion: reduce) { button.ready:not(:disabled) { animation: none; } }
+
 /* ---------- TASKBAR ---------- */
 .taskbar {
   position: fixed;
@@ -1158,7 +1159,6 @@ input[type="range"]::-moz-range-thumb {
   .read-pick { min-height: 36px; font-size: 16px; }
   .read-tray { gap: 4px; }
   .rf-btn { min-height: 96px; }
-  .loud-poster { height: 110px; }
   .actions { padding-top: 8px; padding-bottom: 8px; }
 }
 
