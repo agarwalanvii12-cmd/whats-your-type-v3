@@ -80,9 +80,10 @@ All of this runs in the browser and has no randomness, so the same answers alway
 The AI only writes words about a result that is already decided. Two parts do vary between
 plays: the quick questions (AI or a shuffled pool) and the wording of the reading.
 
-## Kern It, in short
-Challenge 4 scores how you work: `0.6 × time + 0.2 × number of adjustments + 0.2 × evenness`.
-Time runs from the start to your last adjustment, between 6 and 30 seconds, so waiting doesn't count.
+## Mind The Gap, in short
+The spacing on a sign looks off: fix it or ship it. Challenge 4 scores how you work:
+`0.6 × time + 0.2 × number of adjustments + 0.2 × evenness`.
+Time runs from the start to your last adjustment, between 5 and 20 seconds, so waiting doesn't count.
 The code measures this. The result (eyeballed, balanced or obsessed) is then one word the AI gets.
 
 ## The voice check, in short
@@ -109,7 +110,7 @@ User           draws or snaps, says hello, plays challenges, answers questions
   ↓
 p5 frontend    js/ turns each answer into numbers, then W.resultFor(traits) picks the type
   ↓            POST /api/ai with checked data only: name, 5 numbers, type, font names,
-  ↓            palette, voice word, kerning style. Never the photo or the audio.
+  ↓            palette, voice word, gap style. Never the photo or the audio.
 API route      api/ai.js checks each value against an allowlist and builds the prompt
   ↓
 LLM            OpenAI (gpt-4o-mini by default) writes 2 short sentences
@@ -130,10 +131,10 @@ You are the voice of a retro Windows 95 style typography personality quiz at a d
 
 **Reading** (under the Type Card):
 ```
-Player: ${name}. Personality traits: ${describe(traits)}. Their design type: ${type}. Their fonts: headline ${fonts[0]}, subheader ${fonts[1]}, body text ${fonts[2]}. The font that pairs best with them: ${pair}. Their chosen colour palette: ${palette}. ${voice}${kern}In 2 short sentences (max 45 words), Gen Z tone but kind: describe their designer personality (how they work and show up), then one playful tip for using their fonts.
+Player: ${name}. Personality traits: ${describe(traits)}. Their design type: ${type}. Their fonts: headline ${fonts[0]}, subheader ${fonts[1]}, body text ${fonts[2]}. The font that pairs best with them: ${pair}. Their chosen colour palette: ${palette}. ${voice}${gaps}In 2 short sentences (max 45 words), Gen Z tone but kind: describe their designer personality (how they work and show up), then one playful tip for using their fonts.
 ```
 `${voice}` is `Their "say hello" vibe check sounded ${body.voice}. `, or empty if it was skipped.
-`${kern}` is `Given a kerning task, they ${phrase}. `, where the phrase is `eyeballed it and moved on`,
+`${gaps}` is `Told the gaps on a sign looked off, they ${phrase}. `, where the phrase is `eyeballed it and shipped it`,
 `tidied the gaps at a steady pace` or `obsessed over every single gap`.
 
 **Compatibility** (compare screen):

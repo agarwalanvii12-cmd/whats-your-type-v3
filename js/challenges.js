@@ -145,61 +145,61 @@
   };
 
   /* ======================================================
-     4 · KERN IT (45s) · how you work, more than what you make
-     Drag the letters of TYPES until the gaps look even. The score
-     is mostly how long you keep refining, so eyeballing it and
-     moving on reads as Big picture, fussing over every gap reads
-     as Detail-obsessed. The clock stops at your last adjustment,
-     so sitting and waiting doesn't count as care.
+     4 · MIND THE GAP (30s) · fix it or ship it
+     The spacing on a sign looks off. Slide the words to fix it,
+     or ship it as it is. The score is mostly how long you keep
+     refining: shipping fast reads as Big picture, fussing over
+     every gap reads as Detail-obsessed. The clock stops at your
+     last adjustment, so sitting and waiting doesn't count as care.
      ====================================================== */
-  const KERN_WORD = [...'TYPES'];
-  const KERN_START_GAPS = [0.02, 0.62, 0.08, 0.45]; // in em: lumpy on purpose
-  const KERN_EVEN = 0.06;       // a gap within this (em) of the average counts as even
-  const KERN_QUICK = 6;         // last adjustment by this second: eyeballed it
-  const KERN_SLOW = 30;         // still adjusting at this second: obsessed
-  const KERN_MANY_MOVES = 12;   // this many adjustments counts as a lot
-  const KERN_EYEBALLED = 0.33;  // part below this: the "eyeballed" style
-  const KERN_OBSESSED = 0.66;   // part from this up: the "obsessed" style
+  const GAP_WORDS = ['MIND', 'THE', 'GAP'];
+  const GAP_START = [0.12, 1.15]; // in em: lumpy on purpose
+  const GAP_EVEN = 0.1;           // a gap within this (em) of the average counts as even
+  const GAP_QUICK = 5;            // last adjustment by this second: eyeballed it
+  const GAP_SLOW = 20;            // still adjusting at this second: obsessed
+  const GAP_MANY_MOVES = 8;       // this many adjustments counts as a lot
+  const GAP_EYEBALLED = 0.33;     // part below this: the "eyeballed" style
+  const GAP_OBSESSED = 0.66;      // part from this up: the "obsessed" style
 
-  const kernIt = {
+  const mindTheGap = {
     setup(stage, api) {
       const { h, data: d } = api;
-      const box = h('div', { class: 'kern-box' });
+      const box = h('div', { class: 'gap-box' });
       stage.append(box);
-      const fontPx = Math.min(64, Math.floor(stage.clientWidth / 5.4));
+      const fontPx = Math.min(56, Math.floor(stage.clientWidth / 9.6));
       box.style.fontSize = fontPx + 'px';
       box.style.height = Math.round(fontPx * 2.1) + 'px';
 
-      const n = KERN_WORD.length;
-      d.letters = KERN_WORD.map(c => h('span', { class: 'kern-letter' }, c));
-      d.bars = KERN_WORD.slice(1).map(() => h('i', { class: 'kern-bar' }));
-      box.append(...d.letters, ...d.bars);
+      const n = GAP_WORDS.length;
+      d.words = GAP_WORDS.map(w => h('span', { class: 'gap-word' }, w));
+      d.bars = GAP_WORDS.slice(1).map(() => h('i', { class: 'gap-bar' }));
+      box.append(...d.words, ...d.bars);
       Object.assign(d, { box, fontPx, n, moves: 0, lastAt: 0, ready: false, x: [], w: [] });
 
       const gapsPx = () => d.bars.map((_, j) => d.x[j + 1] - (d.x[j] + d.w[j]));
       const render = () => {
-        d.letters.forEach((el, i) => { el.style.left = d.x[i] + 'px'; });
+        d.words.forEach((el, i) => { el.style.left = d.x[i] + 'px'; });
         const gaps = gapsPx();
         const mean = gaps.reduce((a, b) => a + b, 0) / gaps.length;
         d.bars.forEach((b, j) => {
           b.style.left = d.x[j] + d.w[j] + 'px';
           b.style.width = Math.max(3, gaps[j]) + 'px';
-          b.classList.toggle('ok', Math.abs(gaps[j] - mean) <= KERN_EVEN * fontPx);
+          b.classList.toggle('ok', Math.abs(gaps[j] - mean) <= GAP_EVEN * fontPx);
         });
       };
 
       const place = () => {
-        d.w = d.letters.map(el => el.offsetWidth);
-        const total = d.w.reduce((a, b) => a + b, 0) + KERN_START_GAPS.reduce((a, b) => a + b, 0) * fontPx;
+        d.w = d.words.map(el => el.offsetWidth);
+        const total = d.w.reduce((a, b) => a + b, 0) + GAP_START.reduce((a, b) => a + b, 0) * fontPx;
         let x = Math.max(0, (box.clientWidth - total) / 2);
-        d.letters.forEach((el, i) => { d.x[i] = x; x += d.w[i] + (KERN_START_GAPS[i] || 0) * fontPx; });
+        d.words.forEach((el, i) => { d.x[i] = x; x += d.w[i] + (GAP_START[i] || 0) * fontPx; });
         d.ready = true;
         render();
       };
-      // wait for the font, so letter widths are measured correctly
+      // wait for the font, so word widths are measured correctly
       document.fonts.load(`900 ${fontPx}px "Playfair Display"`).then(place, place);
 
-      d.letters.forEach((el, i) => {
+      d.words.forEach((el, i) => {
         let start = null;
         el.addEventListener('pointerdown', e => {
           if (!api.active || !d.ready) return;
@@ -230,16 +230,16 @@
     score({ data: d }) {
       const gaps = d.ready
         ? d.bars.map((_, j) => (d.x[j + 1] - (d.x[j] + d.w[j])) / d.fontPx)
-        : KERN_START_GAPS.slice();
+        : GAP_START.slice();
       const evenness = clamp(1 - (Math.max(...gaps) - Math.min(...gaps)) / 0.8, 0, 1);
-      const pace = clamp((d.lastAt - KERN_QUICK) / (KERN_SLOW - KERN_QUICK), 0, 1);
-      const fuss = clamp(d.moves / KERN_MANY_MOVES, 0, 1);
-      // time matters most. Never touching the letters is pure eyeballing.
+      const pace = clamp((d.lastAt - GAP_QUICK) / (GAP_SLOW - GAP_QUICK), 0, 1);
+      const fuss = clamp(d.moves / GAP_MANY_MOVES, 0, 1);
+      // time matters most. Shipping it untouched is pure eyeballing.
       const part = d.moves ? 0.6 * pace + 0.2 * fuss + 0.2 * evenness : 0;
-      const style = part >= KERN_OBSESSED ? 'obsessed' : part < KERN_EYEBALLED ? 'eyeballed' : 'balanced';
+      const style = part >= GAP_OBSESSED ? 'obsessed' : part < GAP_EYEBALLED ? 'eyeballed' : 'balanced';
       return { part, style, spent: round1(d.lastAt), evenness: round2(evenness), gaps: gaps.map(round2), moves: d.moves };
     },
-    detail: r => (r.moves ? `kerned for ${r.spent}s · ${r.moves} move${r.moves === 1 ? '' : 's'}` : 'left it as it was'),
+    detail: r => (r.moves ? `fixed it for ${r.spent}s · ${r.moves} move${r.moves === 1 ? '' : 's'}` : 'shipped it as it was'),
   };
 
   /* ======================================================
@@ -317,7 +317,7 @@
   W.CHALLENGES = [
     { id: 2, trait: 1, name: 'Make It Read',   time: 25, hint: 'Tap lines in reading order',     ...makeItRead },
     { id: 3, trait: 2, name: 'Rapid Fire',     time: 25, hint: 'Tap the one you vibe with',      ...rapidFire },
-    { id: 4, trait: 3, name: 'Kern It',        time: 45, hint: 'Drag letters till gaps look even', ...kernIt },
+    { id: 4, trait: 3, name: 'Mind The Gap',   time: 30, hint: 'Gaps look off. Fix or ship?',    okLabel: 'Ship it', ...mindTheGap },
     { id: 5, trait: 4, name: 'Type Your Name', time: 25, hint: 'Type your name, fast',           ...typeYourName },
   ];
 
@@ -398,7 +398,7 @@
             else if (phase === 'play') end('done');
             else if (phase === 'ask') nudgeSheet(ask); // safety net: bring the question back into view
           },
-        }), 'OK', 'ok' + c.id);
+        }), c.okLabel || 'OK', 'ok' + c.id);
 
         el.append(h('div', { class: 'stack chal-stack' },
           T.sticker(`Challenge ${c.id}/5 · ${c.time}s`, c.id % 2 ? -4 : 3),

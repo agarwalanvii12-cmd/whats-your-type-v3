@@ -12,7 +12,7 @@
 
    POST /api/ai
      { kind: 'questions' }                    → 10 fresh this-or-that questions
-     { kind: 'reading', name, traits[5], type, fonts[3], pair, palette, voice, kern }
+     { kind: 'reading', name, traits[5], type, fonts[3], pair, palette, voice, gaps }
      { kind: 'compat',  a: {name, traits, type}, b: {...}, score }
    → { text }   (for 'questions', text is JSON: { questions: [...] })
    ========================================================= */
@@ -27,8 +27,8 @@ const TRAITS = [
 ];
 const PALETTES = ['Pop', 'Pastel', 'Complementary', 'Sunset', 'Triadic', 'Monochrome', 'Paint 95'];
 const VOICES = ['introvert', 'ambivert', 'extrovert'];
-const KERN_STYLES = new Map([ // measured in the browser by how long they kept adjusting
-  ['eyeballed', 'eyeballed it and moved on'],
+const GAP_STYLES = new Map([ // measured in the browser by how long they kept adjusting
+  ['eyeballed', 'eyeballed it and shipped it'],
   ['balanced', 'tidied the gaps at a steady pace'],
   ['obsessed', 'obsessed over every single gap'],
 ]);
@@ -77,11 +77,11 @@ function buildPrompt(body) {
     const pair = oneOf(body.pair, FONTS);
     const palette = PALETTES.includes(body.palette) ? body.palette : 'Pop';
     const voice = VOICES.includes(body.voice) ? `Their "say hello" vibe check sounded ${body.voice}. ` : '';
-    const kern = KERN_STYLES.has(body.kern) ? `Given a kerning task, they ${KERN_STYLES.get(body.kern)}. ` : '';
+    const gaps = GAP_STYLES.has(body.gaps) ? `Told the gaps on a sign looked off, they ${GAP_STYLES.get(body.gaps)}. ` : '';
     return (
       `Player: ${name}. Personality traits: ${describe(traits)}. ` +
       `Their design type: ${type}. Their fonts: headline ${fonts[0]}, subheader ${fonts[1]}, body text ${fonts[2]}. ` +
-      `The font that pairs best with them: ${pair}. Their chosen colour palette: ${palette}. ${voice}${kern}` +
+      `The font that pairs best with them: ${pair}. Their chosen colour palette: ${palette}. ${voice}${gaps}` +
       'In 2 short sentences (max 45 words), Gen Z tone but kind: describe their designer ' +
       'personality (how they work and show up), then one playful tip for using their fonts.'
     );

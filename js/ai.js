@@ -76,7 +76,7 @@
         fonts: result.top3.map(f => f.font), pair: result.pair.font,
         palette: W.type.palette().name,
         voice: W.state.results.voice ? W.state.results.voice.answer : null,
-        kern: W.state.results[4] ? W.state.results[4].style : null,
+        gaps: W.state.results[4] ? W.state.results[4].style : null,
       });
       return text ? { text, ai: true } : { text: localReading(name, result), ai: false };
     },

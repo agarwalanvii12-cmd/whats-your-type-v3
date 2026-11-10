@@ -458,9 +458,9 @@ input[type="range"]::-moz-range-thumb {
 .rf-btn { min-width: 0; min-height: 120px; padding: 6px; line-height: 1.1; letter-spacing: 0; }
 .rf-or { font-family: var(--serif); font-style: italic; font-size: 24px; }
 
-/* 4 · Kern It */
-.kern-box { position: relative; overflow: hidden; background: var(--paper); border: 2px solid var(--ink); }
-.kern-letter {
+/* 4 · Mind The Gap */
+.gap-box { position: relative; overflow: hidden; background: var(--paper); border: 2px solid var(--ink); }
+.gap-word {
   position: absolute;
   top: .1em;
   font-family: "Playfair Display", serif;
@@ -471,9 +471,9 @@ input[type="range"]::-moz-range-thumb {
   user-select: none;
   -webkit-user-select: none;
 }
-.kern-letter.dragging { color: var(--navy); }
-.kern-bar { position: absolute; top: 1.28em; height: 12px; background: #ff3b30; border: 1px solid var(--ink); }
-.kern-bar.ok { background: #00a86b; }
+.gap-word.dragging { color: var(--navy); }
+.gap-bar { position: absolute; top: 1.28em; height: 12px; background: #ff3b30; border: 1px solid var(--ink); }
+.gap-bar.ok { background: #00a86b; }
 
 /* 5 · Type Your Name */
 .type-target { display: flex; align-items: baseline; gap: 10px; margin: 0; }
@@ -1018,7 +1018,7 @@ button.ready:not(:disabled):active {
 /* pixel cursors (mouse only; set up in js/fx.js) */
 @media (hover: hover) and (pointer: fine) {
   body { cursor: var(--cursor, auto); }
-  button:not(:disabled), a, label[for], input[type="checkbox"], input[type="range"], .swatch, .kern-letter, .boot { cursor: var(--cursor-hand, pointer); }
+  button:not(:disabled), a, label[for], input[type="checkbox"], input[type="range"], .swatch, .gap-word, .boot { cursor: var(--cursor-hand, pointer); }
   .draw-canvas canvas { cursor: var(--cursor-pencil, crosshair); }
   input[type="text"], textarea { cursor: text; }
 }
