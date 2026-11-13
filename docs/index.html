@@ -103,20 +103,85 @@
     <ol class="steps" id="steps" aria-hidden="true"></ol>
   </section>
 
-  <!-- ===================== 3 to 8 (built in the next steps) ===================== -->
+  <!-- ===================== 3 · SAME ANSWERS, SAME YOU ===================== -->
   <section id="ch3" class="chapter paper" data-title="Same answers" aria-label="Chapter 3, Same answers, same you">
     <div class="wrap">
       <span class="ch-num sticker" style="--tilt:4deg">chapter 3</span>
       <div class="ch-title" data-ransom-text="Same answers, same you" data-seed="ch3"></div>
       <div class="note" data-lines='["same answers twice?"]'></div>
+
+      <div class="runs" id="runs">
+        <div class="run" data-run="A"></div>
+        <div class="runs-eq" aria-hidden="true">=</div>
+        <div class="run" data-run="B"></div>
+      </div>
+      <button class="replay" data-replay="runs">replay</button>
+
+      <div class="note" id="ch3-note" data-manual data-lines='["the maths picks it. I just write it nicely."]'></div>
+
+      <div class="all-types">
+        <p class="label">18 personality types. you get one.</p>
+        <ul class="type-chips" id="type-chips"></ul>
+      </div>
     </div>
   </section>
 
+  <!-- ===================== 4 · WHAT REMI READS ===================== -->
   <section id="ch4" class="chapter paper" data-title="What Remi reads" aria-label="Chapter 4, What Remi reads">
     <div class="wrap">
       <span class="ch-num sticker" style="--tilt:-4deg">chapter 4</span>
       <div class="ch-title" data-ransom-text="What Remi reads" data-seed="ch4"></div>
+      <p class="label kicker">prompts + interaction patterns</p>
+
+      <ol class="pipe" id="pipe">
+        <li class="station" data-st="answers">
+          <p class="st-tag"><b>1</b> your answers</p>
+          <div class="st-body"><ul class="answer-icons" id="answer-icons"></ul></div>
+        </li>
+        <li class="station" data-st="numbers">
+          <p class="st-tag"><b>2</b> 5 numbers</p>
+          <div class="st-body">
+            <div class="trait-bars" id="trait-bars"></div>
+            <p class="formula"><code>trait = 0.5 × challenge + 0.25 × q1 + 0.25 × q2</code> <span class="label">types.js</span></p>
+          </div>
+        </li>
+        <li class="station" data-st="fonts">
+          <p class="st-tag"><b>3</b> closest of 18 fonts</p>
+          <div class="st-body"><div class="font-map" id="font-map"></div></div>
+        </li>
+        <li class="station" data-st="prompt">
+          <p class="st-tag"><b>4</b> my prompt</p>
+          <div class="st-body prompt-body">
+            <figure class="window sent-win">
+              <div class="title-bar"><div class="title-bar-text">phone sends</div></div>
+              <pre class="window-body code" id="sent-json"></pre>
+              <figcaption class="label">checked data only</figcaption>
+            </figure>
+            <figure class="sheet prompt-sheet">
+              <p class="label sheet-tag">server builds · api/ai.js</p>
+              <pre class="prompt" id="prompt-text"></pre>
+            </figure>
+          </div>
+        </li>
+        <li class="station" data-st="reading">
+          <p class="st-tag"><b>5</b> my reading</p>
+          <div class="st-body"><div class="reading-out" id="reading-out"></div></div>
+        </li>
+      </ol>
+
       <div class="note" data-lines='["this is all I get. no photo. no voice. just numbers."]'></div>
+
+      <div class="sys" id="sys">
+        <figure class="sheet sys-sheet">
+          <p class="label sheet-tag">api/ai.js · system prompt</p>
+          <pre class="prompt" id="sys-text"></pre>
+        </figure>
+        <ol class="notes-hand" id="sys-notes"></ol>
+      </div>
+
+      <div class="note" data-lines='["the server writes my prompt. nobody can sneak in their own."]'></div>
+
+      <div class="more-prompts" id="more-prompts"></div>
     </div>
   </section>
 
@@ -188,5 +253,7 @@
   <script src="../js/sound.js"></script>
   <script src="../js/types.js"></script>
   <script src="docs.js"></script>
+  <script src="prompts.js"></script>
+  <script src="chapters.js"></script>
 </body>
 </html>

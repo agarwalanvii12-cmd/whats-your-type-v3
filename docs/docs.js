@@ -86,6 +86,8 @@
   /* ---------- sound: off until the viewer turns it on ---------- */
   let soundOn = false;
   const play = name => { if (soundOn) W.sound.play(name); };
+  W.docsPlay = play;
+  W.docsCalm = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   function setSound(on) {
     soundOn = on;
     if (on) {
@@ -182,7 +184,7 @@
       io.unobserve(e.target);
       fn && fn();
     });
-  }, { threshold: 0.45 });
+  }, { rootMargin: '0px 0px -30% 0px', threshold: 0 }); // fires once its top is 70% up the screen (works for tall things too)
   function onSeen(el, fn) { revealers.set(el, fn); io.observe(el); }
   W.onSeen = onSeen;
 
@@ -472,7 +474,7 @@
 
     // titles drop in and notes type out as they scroll into view
     $$('.ch-title').forEach(t => onSeen(t, () => dropTitle(t)));
-    $$('.note').forEach(n => { if (!n.closest('#ch0')) onSeen(n, () => n._run()); });
+    $$('.note').forEach(n => { if (!n.closest('#ch0') && !n.hasAttribute('data-manual')) onSeen(n, () => n._run()); });
 
     setSound(false);
     $('#mute-btn').addEventListener('click', () => setSound(!soundOn));
