@@ -1,0 +1,192 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#000080">
+  <title>How Remi Was Made</title>
+  <meta name="description" content="What's Your Type?! · ID2116 Project 02 documentation, typed up by Remi.">
+
+  <!-- Same fonts as the app (+ Caveat for hand-drawn notes) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo+Black&family=Bagel+Fat+One&family=Bebas+Neue&family=Bungee&family=Caveat:wght@500;700&family=Comfortaa&family=DM+Serif+Display:ital@0;1&family=EB+Garamond&family=Fraunces:ital,wght@0,900;1,300&family=Instrument+Serif:ital@0;1&family=Josefin+Sans:wght@300&family=Monoton&family=Oswald:wght@300&family=Playfair+Display:ital,wght@0,700;0,900;1,400&family=Press+Start+2P&family=Rubik+Glitch&family=Rubik+Mono+One&family=Silkscreen:wght@400;700&family=Space+Grotesk:wght@300&family=Space+Mono:ital,wght@0,400;0,700;1,700&family=Special+Elite&family=Unbounded:wght@300;400;900&family=VT323&family=Work+Sans:wght@100..900&display=swap">
+
+  <!-- The app's own look: 98.css + the app stylesheet, then docs overrides -->
+  <link rel="stylesheet" href="https://unpkg.com/98.css@0.1.21/dist/98.css">
+  <link rel="stylesheet" href="../style.css">
+  <link rel="stylesheet" href="docs.css">
+</head>
+<body class="docs">
+
+  <!-- ===================== 0 · BOOT ===================== -->
+  <section id="ch0" class="chapter ch-boot" data-title="Boot" aria-label="Chapter 0, Boot">
+    <div class="boot-inner docs-boot">
+      <canvas id="boot-logo" class="boot-logo" aria-hidden="true"></canvas>
+      <div class="boot-title" data-ransom-text="What's your type?!" data-seed="boot" data-dark></div>
+      <div class="boot-bar docs-boot-bar" aria-hidden="true"><div class="boot-fill" id="boot-fill"></div></div>
+      <p id="boot-status" class="boot-status">Starting up...</p>
+
+      <div class="note note-dark" data-lines='["click. clack. ding.","hi, I&#39;m Remi. I type up your type.","today I&#39;m typing up how I was made."]'></div>
+
+      <div class="boot-links">
+        <a class="mag-link" data-mag="play it" href="https://whats-your-type-v3-anvii.vercel.app" target="_blank" rel="noopener">play it</a>
+        <a class="mag-link" data-mag="read the code" href="https://github.com/agarwalanvii12-cmd/whats-your-type-v3" target="_blank" rel="noopener">read the code</a>
+      </div>
+      <p class="scroll-hint label">scroll</p>
+    </div>
+  </section>
+
+  <!-- ===================== 1 · WHAT THIS PROJECT TAUGHT ===================== -->
+  <section id="ch1" class="chapter paper" data-title="What it taught" aria-label="Chapter 1, What this project taught">
+    <div class="wrap">
+      <span class="ch-num sticker" style="--tilt:-5deg">chapter 1</span>
+      <div class="ch-title" data-ransom-text="What this project taught" data-seed="ch1"></div>
+
+      <div class="note note-contents" data-lines='["1 · ask an LLM the right way","2 · let code decide, let AI describe","3 · make inputs feel like play","4 · never leave a player stuck"]'></div>
+
+      <p class="brief-quote"><span class="label">the brief</span><span class="human">"An AI-powered agent combines traditional algorithmic behaviour with LLMs."</span></p>
+
+      <div class="split" id="split">
+        <figure class="window split-win">
+          <div class="title-bar"><div class="title-bar-text">algorithm.js</div></div>
+          <div class="window-body crunch" id="crunch"></div>
+          <figcaption><span class="sticker tag" style="--tilt:-3deg">algorithm</span> decides your type</figcaption>
+        </figure>
+        <div class="split-plus" aria-hidden="true">+</div>
+        <figure class="window split-win">
+          <div class="title-bar"><div class="title-bar-text">Remi.exe</div></div>
+          <div class="window-body remi-side" id="remi-side"></div>
+          <figcaption><span class="sticker tag" style="--tilt:3deg">LLM</span> writes about you</figcaption>
+        </figure>
+      </div>
+      <button class="replay" data-replay="split">replay</button>
+
+      <div class="note" data-lines='["the algorithm sorts you. I write you."]'></div>
+    </div>
+  </section>
+
+  <!-- ===================== 2 · PLAY IT WITH ME ===================== -->
+  <section id="ch2" class="chapter ch-play" data-title="Play it with me" aria-label="Chapter 2, Play it with me">
+    <div class="stage">
+      <canvas id="wallpaper" class="wallpaper docs-wallpaper" aria-hidden="true"></canvas>
+      <div class="stage-inner">
+        <div class="stage-head">
+          <span class="sticker" style="--tilt:-4deg">chapter 2</span>
+          <div class="ch-title light" data-ransom-text="Play it with me" data-seed="ch2"></div>
+        </div>
+
+        <div class="phone-col">
+          <div class="phone" aria-live="polite">
+            <img id="phone-img" src="img/screens/boot.png" alt="Boot screen" width="390" height="844">
+          </div>
+          <img id="real-card" class="real-card" src="img/type-card.png" alt="A real Type Card: The Future Shaper" loading="lazy">
+        </div>
+
+        <section class="window play-win" aria-label="Remi's notes">
+          <div class="title-bar">
+            <div class="title-bar-text">Remi's notes</div>
+            <div class="title-bar-controls"><button aria-label="Help" tabindex="-1"></button></div>
+          </div>
+          <div class="window-body">
+            <div class="play-note" id="play-note"></div>
+            <p class="chip" id="play-chip"></p>
+          </div>
+          <div class="status-bar">
+            <p class="status-bar-field" id="play-step">Step 1 of 10</p>
+            <p class="status-bar-field" id="play-name">boot</p>
+          </div>
+        </section>
+      </div>
+    </div>
+    <!-- invisible scroll steps: each one swaps the phone screen -->
+    <ol class="steps" id="steps" aria-hidden="true"></ol>
+  </section>
+
+  <!-- ===================== 3 to 8 (built in the next steps) ===================== -->
+  <section id="ch3" class="chapter paper" data-title="Same answers" aria-label="Chapter 3, Same answers, same you">
+    <div class="wrap">
+      <span class="ch-num sticker" style="--tilt:4deg">chapter 3</span>
+      <div class="ch-title" data-ransom-text="Same answers, same you" data-seed="ch3"></div>
+      <div class="note" data-lines='["same answers twice?"]'></div>
+    </div>
+  </section>
+
+  <section id="ch4" class="chapter paper" data-title="What Remi reads" aria-label="Chapter 4, What Remi reads">
+    <div class="wrap">
+      <span class="ch-num sticker" style="--tilt:-4deg">chapter 4</span>
+      <div class="ch-title" data-ransom-text="What Remi reads" data-seed="ch4"></div>
+      <div class="note" data-lines='["this is all I get. no photo. no voice. just numbers."]'></div>
+    </div>
+  </section>
+
+  <section id="ch5" class="chapter paper" data-title="Behind the screen" aria-label="Chapter 5, Behind the screen">
+    <div class="wrap">
+      <span class="ch-num sticker" style="--tilt:3deg">chapter 5</span>
+      <div class="ch-title" data-ransom-text="Behind the screen" data-seed="ch5"></div>
+      <div class="note" data-lines='["your phone never talks to OpenAI. the server does."]'></div>
+    </div>
+  </section>
+
+  <section id="ch6" class="chapter paper" data-title="When things break" aria-label="Chapter 6, When things break">
+    <div class="wrap">
+      <span class="ch-num sticker" style="--tilt:-3deg">chapter 6</span>
+      <div class="ch-title" data-ransom-text="When things break" data-seed="ch6"></div>
+      <div class="note" data-lines='["things break at showcases. here&#39;s what I do."]'></div>
+    </div>
+  </section>
+
+  <section id="ch7" class="chapter paper" data-title="How it started" aria-label="Chapter 7, How it started">
+    <div class="wrap">
+      <span class="ch-num sticker" style="--tilt:4deg">chapter 7</span>
+      <div class="ch-title" data-ransom-text="How it started" data-seed="ch7"></div>
+      <div class="note" data-lines='["before me, there was v1."]'></div>
+    </div>
+  </section>
+
+  <section id="ch8" class="chapter paper" data-title="Watch it" aria-label="Chapter 8, Watch it">
+    <div class="wrap">
+      <span class="ch-num sticker" style="--tilt:-4deg">chapter 8</span>
+      <div class="ch-title" data-ransom-text="Watch it" data-seed="ch8"></div>
+      <div class="note" data-lines='["now watch a real game."]'></div>
+    </div>
+  </section>
+
+  <!-- ===================== Remi's checklist (fixed corner) ===================== -->
+  <aside class="checklist" id="checklist" aria-label="Brief checklist">
+    <div class="check-paper" id="check-paper">
+      <p class="label check-head">the brief <span id="check-count">0/6</span></p>
+      <ul id="check-list"></ul>
+    </div>
+    <button class="check-remi" id="check-toggle" aria-expanded="true" aria-controls="check-paper" aria-label="Show or hide the checklist"></button>
+  </aside>
+
+  <!-- ===================== TASKBAR = chapter nav ===================== -->
+  <footer class="taskbar docs-taskbar">
+    <div class="progress" aria-hidden="true"><i id="progress"></i></div>
+    <button id="start-btn" class="start-btn" aria-haspopup="menu" aria-expanded="false" aria-controls="start-menu">
+      <img id="start-icon" alt="">Start
+    </button>
+    <button class="task-btn pressed" id="task-btn" tabindex="-1">0 · Boot</button>
+    <div class="tray">
+      <button id="check-tray" class="check-tray" aria-controls="check-paper" aria-expanded="false" aria-label="Show the brief checklist"><span class="box" aria-hidden="true"></span><span id="check-tray-n">0/6</span></button>
+      <button id="mute-btn" class="mute-btn" aria-label="Turn Remi's typing sounds on" aria-pressed="false"><img id="mute-icon" alt=""></button>
+      <span id="clock" class="clock">12:00</span>
+    </div>
+  </footer>
+
+  <nav id="start-menu" class="window start-menu" role="menu" hidden aria-label="Chapters">
+    <div class="start-side"><span>REMI</span></div>
+    <div class="start-items" id="start-items"></div>
+  </nav>
+
+  <!-- The app's own scripts, reused as-is -->
+  <script src="../js/icons.js"></script>
+  <script src="../js/type.js"></script>
+  <script src="../js/wallpaper.js"></script>
+  <script src="../js/fx.js"></script>
+  <script src="../js/sound.js"></script>
+  <script src="../js/types.js"></script>
+  <script src="docs.js"></script>
+</body>
+</html>
