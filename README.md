@@ -110,10 +110,11 @@ User           draws or snaps, says hello, plays challenges, answers questions
   ↓
 p5 frontend    js/ turns each answer into numbers, then W.resultFor(traits) picks the type
   ↓            POST /api/ai with checked data only: name, 5 numbers, type, font names,
-  ↓            palette, voice word, gap style. Never the photo or the audio.
+  ↓            palette, and clues about what you did (choices, picks, timings, the
+  ↓            quick answers you tapped). Never the photo, the drawing or the audio.
 API route      api/ai.js checks each value against an allowlist and builds the prompt
   ↓
-LLM            OpenAI (gpt-4o-mini by default) writes 2 short sentences
+LLM            OpenAI (gpt-4o-mini by default) writes 3 short Gen Z sentences as Remi
   ↓
 Result         the reading is typed out under the Type Card
                (no answer in 10 seconds? js/ai.js writes its own from the traits)
@@ -123,19 +124,40 @@ Room moves take a separate path: browser to `api/room.js` (or PeerJS) to the oth
 ## The LLM prompts (verbatim from `api/ai.js`)
 **System prompt, used for every request:**
 ```
-You are the voice of a retro Windows 95 style typography personality quiz at a design school showcase. Be warm, witty and specific to the data. Plain text only: no emojis, no em dashes, no lists, no quotes around the answer. Talk to the player as "you". Never mention AI, models or prompts.
+You are Remi, a tiny pixel typewriter who types personality readings in a retro Windows 95 typography quiz at a design school showcase. You read designers through the choices they make. Voice: Gen Z, warm, confident, a little chaotic, never mean. Plain text only: no emojis, no hashtags, no em dashes, no lists or numbering, no quotes around the answer. Talk to the player as "you". Never mention AI, models, prompts, scores or percentages.
 ```
 
 `${...}` is filled in by the server after checking the value.
 `describe(traits)` gives text like `Introvert 90% / Extrovert 10%; Free spirit 80% / Planner 20%; ...`.
 
-**Reading** (under the Type Card):
+**Reading** (typed by Remi under the Type Card):
 ```
-Player: ${name}. Personality traits: ${describe(traits)}. Their design type: ${type}. Their fonts: headline ${fonts[0]}, subheader ${fonts[1]}, body text ${fonts[2]}. The font that pairs best with them: ${pair}. Their chosen colour palette: ${palette}. ${voice}${gaps}In 2 short sentences (max 45 words), Gen Z tone but kind: describe their designer personality (how they work and show up), then one playful tip for using their fonts.
+Read this designer from what they actually did in the game, not just from their result.
+
+Player: ${name}
+Result: ${type}. Fonts: headline ${fonts[0]}, subheader ${fonts[1]}, body text ${fonts[2]}. Best pairing: ${pair}. Colour palette: ${palette}.
+Traits: ${describe(traits)}
+What they did:
+${clues}
+
+Write exactly 3 short sentences, 60 words max in total, as plain sentences (no numbering).
+Sentence 1: a bold, specific guess about how they are as a designer in real life (crits, deadlines, group projects, their files or their desktop), backed by one or two things they did. Name the actual choice.
+Sentence 2: call out a funny contradiction or tell in their choices, roast-lite and kind.
+Sentence 3: one tip for using their fonts, naming at least one of them.
+Gen Z voice: casual and confident, slang only where it fits (lowkey, ate, no notes, it's giving, main character, the way you...). Do not restate the type name, list traits or invent anything not listed above.
 ```
-`${voice}` is `Their "say hello" vibe check sounded ${body.voice}. `, or empty if it was skipped.
-`${gaps}` is `Told the gaps on a sign looked off, they ${phrase}. `, where the phrase is `eyeballed it and shipped it`,
-`tidied the gaps at a steady pace` or `obsessed over every single gap`.
+`${clues}` is built by `describeClues()` from checked fields only (allowed words, clamped numbers,
+and the quick answers cut to 60 plain characters). A real example:
+```
+- Self-portrait: skipped drawing and snapped a webcam selfie, turned into pixels.
+- Say hello: loud and expressive, after correcting what the mic heard.
+- Poster hierarchy: made people read the details, then the headline, then the subhead (broke the usual order).
+- Rapid fire this-or-that: picked Cloud, Sans, OLED, Digital, 2026.
+- Told the spacing on a sign looked off, they eyeballed it and shipped it (1.2s, 1 adjustment).
+- Typed their own name at 4.2 keys a second with 0 backspaces.
+- Quick answers they picked: Your files are named... "final_final_v3".
+```
+If the AI can't answer, `js/ai.js` writes its own reading from the same clues with templates.
 
 **Compatibility** (compare screen):
 ```

@@ -12,7 +12,7 @@
 
    POST /api/ai
      { kind: 'questions' }                    → 10 fresh this-or-that questions
-     { kind: 'reading', name, traits[5], type, fonts[3], pair, palette, voice, gaps }
+     { kind: 'reading', name, traits[5], type, fonts[3], pair, palette, clues }
      { kind: 'compat',  a: {name, traits, type}, b: {...}, score }
    → { text }   (for 'questions', text is JSON: { questions: [...] })
    ========================================================= */
@@ -26,7 +26,8 @@ const TRAITS = [
   ['Big picture', 'Detail-obsessed'], ['Slow burner', 'Fast mover'],
 ];
 const PALETTES = ['Pop', 'Pastel', 'Complementary', 'Sunset', 'Triadic', 'Monochrome', 'Paint 95'];
-const VOICES = ['introvert', 'ambivert', 'extrovert'];
+// the rapid-fire options, so only real picks get through
+const PICKS = ['Floppy', 'Cloud', 'Serif', 'Sans', 'CRT', 'OLED', 'Film', 'Digital', '1998', '2026'];
 const GAP_STYLES = new Map([ // measured in the browser by how long they kept adjusting
   ['eyeballed', 'eyeballed it and shipped it'],
   ['balanced', 'tidied the gaps at a steady pace'],
@@ -45,10 +46,11 @@ const TYPES = [
 ];
 
 const SYSTEM =
-  'You are the voice of a retro Windows 95 style typography personality quiz at a ' +
-  'design school showcase. Be warm, witty and specific to the data. Plain text only: ' +
-  'no emojis, no em dashes, no lists, no quotes around the answer. Talk to the player as "you". ' +
-  'Never mention AI, models or prompts.';
+  'You are Remi, a tiny pixel typewriter who types personality readings in a retro Windows 95 ' +
+  'typography quiz at a design school showcase. You read designers through the choices they make. ' +
+  'Voice: Gen Z, warm, confident, a little chaotic, never mean. Plain text only: no emojis, no hashtags, ' +
+  'no em dashes, no lists or numbering, no quotes around the answer. Talk to the player as "you". ' +
+  'Never mention AI, models, prompts, scores or percentages.';
 
 /* ---------- checking the input ---------- */
 function bad(msg) { const e = new Error(msg); e.bad = true; throw e; }
@@ -66,6 +68,57 @@ const describe = traits => traits
   .map((v, i) => `${TRAITS[i][0]} ${Math.round((1 - v) * 100)}% / ${TRAITS[i][1]} ${Math.round(v * 100)}%`)
   .join('; ');
 
+/* What they actually did, as short checked lines. Every field is optional. */
+function describeClues(c) {
+  c = c && typeof c === 'object' ? c : {};
+  const num = (v, lo, hi) => { const n = Number(v); return v != null && Number.isFinite(n) ? Math.max(lo, Math.min(hi, n)) : null; };
+  const pick = (v, list) => (list.includes(v) ? v : null);
+  const text = v => String(v || '').replace(/[^\p{L}\p{N} '.,!?&+/:()_-]/gu, '').replace(/\s+/g, ' ').trim().slice(0, 60);
+  const out = [];
+
+  const portrait = pick(c.portrait, ['snapped', 'drew', 'default']);
+  const strokes = num(c.strokes, 0, 999), colours = num(c.colours, 0, 40);
+  if (portrait === 'snapped') out.push('Self-portrait: skipped drawing and snapped a webcam selfie, turned into pixels.');
+  if (portrait === 'default') out.push('Self-portrait: drew nothing and took the default smiley.');
+  if (portrait === 'drew') out.push(`Self-portrait: drew it by hand, ${strokes} strokes in ${colours} colours` +
+    (c.ranOutDrawing === true ? ', still drawing when time ran out.' : ', finished before time ran out.'));
+
+  const voice = pick(c.voice, ['quiet flat', 'quiet expressive', 'loud flat', 'loud expressive']);
+  const how = pick(c.voiceHow, ['mic', 'override', 'tap', 'skip']);
+  if (how === 'skip') out.push('Say hello: skipped the mic check.');
+  else if (voice) out.push(`Say hello: ${voice.replace(' ', ' and ')}` +
+    { mic: ', read from their voice.', override: ', after correcting what the mic heard.', tap: ', tapped instead of speaking.' }[how || 'mic']);
+
+  const roles = Array.isArray(c.readOrder) ? c.readOrder.map(r => pick(r, ['headline', 'subhead', 'details'])) : [];
+  if (roles.length === 3 && roles.every(Boolean)) {
+    const classic = roles.join() === 'headline,subhead,details';
+    out.push(`Poster hierarchy: made people read the ${roles.join(', then the ')}` +
+      (classic ? ' (by the book).' : roles[0] === 'headline' ? ' (headline first, then freestyled).' : ' (broke the usual order).'));
+  }
+
+  const picks = Array.isArray(c.retro) ? c.retro.map(p => pick(p, PICKS)).filter(Boolean).slice(0, 5) : [];
+  if (picks.length) out.push(`Rapid fire this-or-that: picked ${picks.join(', ')}.`);
+
+  if (GAP_STYLES.has(c.gapStyle)) {
+    const secs = num(c.gapSeconds, 0, 30), moves = num(c.gapMoves, 0, 99);
+    out.push(moves ? `Told the spacing on a sign looked off, they ${GAP_STYLES.get(c.gapStyle)} (${secs}s, ${moves} adjustment${moves === 1 ? '' : 's'}).`
+      : 'Told the spacing on a sign looked off, they shipped it without touching a thing.');
+  }
+
+  const speed = num(c.typeSpeed, 0, 20), backs = num(c.backspaces, 0, 99);
+  if (speed) out.push(`Typed their own name at ${speed} keys a second with ${backs || 0} backspaces.`);
+  else if (speed === 0) out.push('Hit OK before typing their own name.');
+
+  const timeouts = num(c.timeouts, 0, 4);
+  if (timeouts) out.push(`Let the timer run out on ${timeouts} challenge${timeouts === 1 ? '' : 's'}.`);
+
+  const said = (Array.isArray(c.said) ? c.said : []).slice(0, 10)
+    .map(s => s && typeof s === 'object' && text(s.q) && text(s.a) ? `${text(s.q)} "${text(s.a)}"` : null).filter(Boolean);
+  if (said.length) out.push(`Quick answers they picked: ${said.join('; ')}.`);
+
+  return out.map(line => '- ' + line).join('\n');
+}
+
 /* ---------- the prompts ---------- */
 function buildPrompt(body) {
   if (body.kind === 'reading') {
@@ -76,14 +129,21 @@ function buildPrompt(body) {
     if (fonts.length !== 3) bad('fonts');
     const pair = oneOf(body.pair, FONTS);
     const palette = PALETTES.includes(body.palette) ? body.palette : 'Pop';
-    const voice = VOICES.includes(body.voice) ? `Their "say hello" vibe check sounded ${body.voice}. ` : '';
-    const gaps = GAP_STYLES.has(body.gaps) ? `Told the gaps on a sign looked off, they ${GAP_STYLES.get(body.gaps)}. ` : '';
+    const clues = describeClues(body.clues);
     return (
-      `Player: ${name}. Personality traits: ${describe(traits)}. ` +
-      `Their design type: ${type}. Their fonts: headline ${fonts[0]}, subheader ${fonts[1]}, body text ${fonts[2]}. ` +
-      `The font that pairs best with them: ${pair}. Their chosen colour palette: ${palette}. ${voice}${gaps}` +
-      'In 2 short sentences (max 45 words), Gen Z tone but kind: describe their designer ' +
-      'personality (how they work and show up), then one playful tip for using their fonts.'
+      `Read this designer from what they actually did in the game, not just from their result.\n\n` +
+      `Player: ${name}\n` +
+      `Result: ${type}. Fonts: headline ${fonts[0]}, subheader ${fonts[1]}, body text ${fonts[2]}. ` +
+      `Best pairing: ${pair}. Colour palette: ${palette}.\n` +
+      `Traits: ${describe(traits)}\n` +
+      (clues ? `What they did:\n${clues}\n` : '') +
+      `\nWrite exactly 3 short sentences, 60 words max in total, as plain sentences (no numbering).\n` +
+      'Sentence 1: a bold, specific guess about how they are as a designer in real life ' +
+      '(crits, deadlines, group projects, their files or their desktop), backed by one or two things they did. Name the actual choice.\n' +
+      'Sentence 2: call out a funny contradiction or tell in their choices, roast-lite and kind.\n' +
+      'Sentence 3: one tip for using their fonts, naming at least one of them.\n' +
+      'Gen Z voice: casual and confident, slang only where it fits (lowkey, ate, no notes, it\'s giving, ' +
+      'main character, the way you...). Do not restate the type name, list traits or invent anything not listed above.'
     );
   }
   if (body.kind === 'compat') {
@@ -216,7 +276,7 @@ module.exports = async function handler(req, res) {
       body: JSON.stringify({
         model: MODEL,
         messages: [{ role: 'system', content: SYSTEM }, { role: 'user', content: prompt }],
-        max_tokens: isQuiz ? 900 : 120,
+        max_tokens: isQuiz ? 900 : kind === 'reading' ? 170 : 120,
         temperature: 0.9,
         ...(isQuiz ? { response_format: { type: 'json_object' } } : {}),
       }),
@@ -236,7 +296,9 @@ module.exports = async function handler(req, res) {
       .trim()
       .replace(/\s*[—–]\s*/g, ', ')   // house rule: no em dashes
       .replace(/^["'“]+|["'”]+$/g, '')
-      .slice(0, 400);
+      .replace(/^\s*\d+[.)]\s*/gm, '')  // drop numbering if it slips in
+      .replace(/\s*\n+\s*/g, ' ')
+      .slice(0, 480);
     if (!text) return res.status(502).json({ error: 'Empty answer' });
     return res.status(200).json({ text });
   } catch (e) {
@@ -249,3 +311,4 @@ module.exports = async function handler(req, res) {
 // exported for local tests
 module.exports.buildPrompt = buildPrompt;
 module.exports.cleanQuestions = cleanQuestions;
+module.exports.describeClues = describeClues;

@@ -90,7 +90,8 @@
       const order = d.order.concat(d.trayOrder.filter(i => !d.order.includes(i)));
       let swaps = 0;
       for (let a = 0; a < 3; a++) for (let b = a + 1; b < 3; b++) if (order[a] > order[b]) swaps++;
-      return { part: 1 - swaps / 3, order: order.map(i => d.items[i].text), placed: d.order.length };
+      const roles = order.map(i => ['headline', 'subhead', 'details'][i]);
+      return { part: 1 - swaps / 3, order: order.map(i => d.items[i].text), roles, placed: d.order.length };
     },
     detail: r => `you read: ${r.order.join(' > ')}`,
   };
@@ -337,11 +338,17 @@
     ask.classList.remove('nudge'); void ask.offsetWidth; ask.classList.add('nudge');
   }
   function askQuestions(ask, state, trait, timesUp, done) {
-    const h = W.h, T = W.type, answers = [];
+    const h = W.h, T = W.type, answers = [], said = [];
     const askNext = () => {
       const q = questionsFor(state, trait)[answers.length];
-      if (!q) { ask.remove(); done(answers); return; }
-      const pick = v => { answers.push(v); askNext(); };
+      if (!q) {
+        ask.remove();
+        // keep the words they picked too, so the AI reading can quote them
+        (state.results.said = state.results.said || {})[trait] = said;
+        done(answers);
+        return;
+      }
+      const pick = v => { answers.push(v); said.push({ q: q[0], a: q[1 + v] }); askNext(); };
       const options = [[q[1], 0], [q[2], 1]];
       if (Math.random() < 0.5) options.reverse();
       ask.replaceChildren(
