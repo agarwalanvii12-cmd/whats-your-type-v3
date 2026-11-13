@@ -48,7 +48,7 @@ meter, and the Type Card image. The other screens are HTML and CSS.
 
 | State | Goes to | When |
 |---|---|---|
-| `boot` | `lobby` | tap to start |
+| `boot` | `lobby` | Play solo or 2 players (the lobby then shows only that path) |
 | `lobby` | `draw` | Play solo, or the host's Start |
 | `lobby` | `compat` | Compare a code, or a friend's link |
 | `draw` | `hello` | Done, or Next after time runs out |

@@ -2,7 +2,7 @@
    main.js · screen state machine + desktop, taskbar, boot
 
    States and transitions (W.go / W.next, in ORDER below):
-     boot        → lobby        tap to start
+     boot        → lobby        Play solo or 2 players (lobby shows that path)
      lobby       → draw         Play solo, or the host's Start
      lobby       → compat       Compare a code, or a friend's link
      draw        → hello        Done, or Next after time runs out
@@ -130,14 +130,14 @@
     const box = $('#boot-title');
     box.replaceChildren(
       T.ransom("What's your type?!", 46, 'boot', { dark: true, align: 'center' }),
-      Object.assign(T.sticker('solo / 2 player', -6, 'tag'), { className: 'sticker tag s2' }),
     );
   }
 
   W.screens.boot = {
     enter() {
       const boot = $('#boot'), fill = $('#boot-fill'), bar = $('#boot-bar');
-      const status = $('#boot-status'), tap = $('#boot-tap');
+      // pick solo or 2 players right here, once loading is done
+      const status = $('#boot-status'), tap = $('#boot-picks');
       boot.hidden = false;
       boot.classList.remove('ready');
       tap.hidden = true;
@@ -158,14 +158,17 @@
           this.timer = null;
           boot.classList.add('ready');
           tap.hidden = false;
-          tap.focus();
+          $('#boot-solo').focus();
         }
       }, 240);
 
-      this.onTap = () => {
-        if (!boot.classList.contains('ready')) return;
+      // the lobby then shows only what that choice needs
+      this.onTap = e => {
+        const btn = e.target.closest('.boot-pick');
+        if (!btn || !boot.classList.contains('ready')) return;
         W.sound.unlock();
         W.sound.play('chime');
+        W.state.pick = btn.id === 'boot-duo' ? 'duo' : 'solo';
         W.go('lobby');
       };
       boot.addEventListener('click', this.onTap);
@@ -213,10 +216,14 @@
         },
       }), 'Play solo');
       input.addEventListener('keydown', e => { if (e.key === 'Enter') solo.click(); });
-      // Play solo turns green once there's a name
-      const nameReady = () => solo.classList.toggle('ready', input.value.trim() !== '');
+      const create = T.magButton(h('button', { onclick: () => L.host(myName()) }), 'Create room', 'create');
+      const join = T.magButton(h('button', { onclick: () => { this.joinOpen = true; this.render(); } }), 'Join room', 'join');
+      // the start button turns green once there's a name
+      const nameReady = () => [solo, create].forEach(b => b.classList.toggle('ready', input.value.trim() !== ''));
       input.addEventListener('input', nameReady);
       nameReady();
+      // switch between solo and 2 players without going back
+      const swap = (to, label) => h('button', { class: 'swap-btn', onclick: () => { state.pick = to; this.render(); } }, label);
 
       // Opened a friend's link before playing? Say who's waiting.
       const invite = state.friend && h('div', { class: 'invite' },
@@ -249,16 +256,18 @@
       } else if (this.joinOpen) {
         body = [nameField, this.joinPanel(myName)];
       } else {
-        // name + start buttons live in the pinned bar, so they're never cut off
+        // name + start buttons live in the pinned bar, so they're never cut off.
+        // Picked on the first screen? Show only that path, plus a way to switch.
+        const rooms = h('div', { class: 'row' }, create, join);
+        const start = state.pick === 'duo' ? [rooms, swap('solo', 'Play solo instead')]
+          : state.pick === 'solo' ? [solo, swap('duo', 'Play with a friend instead')]
+          : [solo, rooms];
         body = [
           enterCode,
           h('div', { class: 'actions' },
             L.error && h('p', { class: 'label error' }, L.error),
             nameField,
-            solo,
-            h('div', { class: 'row' },
-              T.magButton(h('button', { onclick: () => L.host(myName()) }), 'Create room', 'create'),
-              T.magButton(h('button', { onclick: () => { this.joinOpen = true; this.render(); } }), 'Join room', 'join'))),
+            ...start),
         ].filter(Boolean);
       }
       el.append(h('div', { class: 'stack' }, head, body));
@@ -590,7 +599,8 @@
     buildBootTitle();
     W.wallpaper.init();
     W.fx.init();
-    T.magButton($('#boot-tap'), 'Tap to start', 'boot-tap');
+    T.magButton($('#boot-solo'), 'Play solo', 'boot-solo');
+    T.magButton($('#boot-duo'), '2 players', 'boot-duo');
     buildToolWindows();
     buildIcons();
     buildTaskbar();
@@ -614,6 +624,7 @@
     if (room) {
       history.replaceState(null, '', location.pathname + location.search);
       W.state.joinCode = room[1].toUpperCase();
+      W.state.pick = 'duo';
       W.go('lobby');
       return;
     }
