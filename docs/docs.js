@@ -59,6 +59,10 @@
       '.....k......', '....kwk.....', '...kwwwk....', '.....k......', '.k...k...k..', 'kwkkkkkkkwk.',
       '.k...k...k..', '.....k......', '...kwwwk....', '....kwk.....', '.....k......',
     ],
+    phone: [
+      '.kkkkkkk.', 'kdddddddk', 'kdBBBBBdk', 'kdBccBBdk', 'kdBBBBBdk', 'kdBBBBBdk', 'kdBBBBBdk', 'kdBBBBBdk',
+      'kdBBBBBdk', 'kdddddddk', 'kdddkdddk', 'kdddddddk', '.kkkkkkk.',
+    ],
     none: [
       '..kkkkkkkk..', '.kQQQQQQQQk.', '.kQkkkkkkQk.', '.kQQQQQQQQk.', '.kQkkkkkQQk.', '.kQQQQQQQQk.',
       '.kQkkkkkkQk.', '.kQQQQQQQQk.', '.kkkkkkkkkk.',
@@ -197,6 +201,7 @@
     { text: 'recovery paths', ch: 'ch6' },
     { text: 'architecture mapped', ch: 'ch5' },
   ];
+  W.DOCS_CHECKS = CHECKS;
   const chapters = $$('.chapter');
   const reached = new Set();
   let current = null;

@@ -185,35 +185,110 @@
     </div>
   </section>
 
+  <!-- ===================== 5 · BEHIND THE SCREEN ===================== -->
   <section id="ch5" class="chapter paper" data-title="Behind the screen" aria-label="Chapter 5, Behind the screen">
     <div class="wrap">
       <span class="ch-num sticker" style="--tilt:3deg">chapter 5</span>
       <div class="ch-title" data-ransom-text="Behind the screen" data-seed="ch5"></div>
+      <p class="label kicker">tap a box to see its code</p>
+
+      <div class="arch" id="arch">
+        <svg class="arch-lines" id="arch-lines" aria-hidden="true"></svg>
+        <div class="arch-col">
+          <p class="label col-tag">your phone</p>
+          <button class="node node-phone" data-node="phone"><img src="img/screens/lobby.png" alt=""><b>p5.js + js/</b><span>the game</span></button>
+        </div>
+        <div class="arch-col">
+          <p class="label col-tag">Vercel /api</p>
+          <button class="node" data-node="ai"><b>ai.js</b><span>writes prompts</span></button>
+          <button class="node" data-node="room"><b>room.js</b><span>live rooms</span></button>
+          <button class="node" data-node="gallery"><b>gallery.js</b><span>card wall</span></button>
+          <button class="node" data-node="turn"><b>turn.js</b><span>relay list</span></button>
+        </div>
+        <div class="arch-col">
+          <p class="label col-tag">outside</p>
+          <button class="node node-ext" data-node="openai"><b>OpenAI</b><span>gpt-4o-mini</span></button>
+          <button class="node node-ext" data-node="redis"><b>Upstash Redis</b><span>rooms + wall</span></button>
+          <button class="node node-ext" data-node="peerjs"><b>PeerJS</b><span>phone to phone</span></button>
+        </div>
+      </div>
+
       <div class="note" data-lines='["your phone never talks to OpenAI. the server does."]'></div>
+
+      <div class="p2p">
+        <p class="label">two phones, three ways to meet</p>
+        <ol class="p2p-lanes">
+          <li><span class="lane-n">1</span><span class="lane-ph"></span><i class="lane-wire"></i><b>room.js + Redis</b><i class="lane-wire"></i><span class="lane-ph"></span></li>
+          <li><span class="lane-n">2</span><span class="lane-ph"></span><i class="lane-wire dashed"></i><b>PeerJS direct</b><i class="lane-wire dashed"></i><span class="lane-ph"></span></li>
+          <li><span class="lane-n">3</span><span class="lane-ph"></span><i class="lane-wire dotted"></i><b>compare by code · offline</b><i class="lane-wire dotted"></i><span class="lane-ph"></span></li>
+        </ol>
+      </div>
     </div>
   </section>
 
+  <!-- ===================== 6 · WHEN THINGS BREAK ===================== -->
   <section id="ch6" class="chapter paper" data-title="When things break" aria-label="Chapter 6, When things break">
     <div class="wrap">
       <span class="ch-num sticker" style="--tilt:-3deg">chapter 6</span>
       <div class="ch-title" data-ransom-text="When things break" data-seed="ch6"></div>
       <div class="note" data-lines='["things break at showcases. here&#39;s what I do."]'></div>
+      <p class="label kicker">tap to flip</p>
+      <ul class="flips" id="flips"></ul>
     </div>
   </section>
 
+  <!-- ===================== 7 · HOW IT STARTED ===================== -->
   <section id="ch7" class="chapter paper" data-title="How it started" aria-label="Chapter 7, How it started">
     <div class="wrap">
       <span class="ch-num sticker" style="--tilt:4deg">chapter 7</span>
       <div class="ch-title" data-ransom-text="How it started" data-seed="ch7"></div>
       <div class="note" data-lines='["before me, there was v1."]'></div>
     </div>
+
+    <div class="versions" id="versions">
+      <div class="v-stage">
+        <ol class="v-dots" id="v-dots" aria-hidden="true"></ol>
+        <div class="v-stack" id="v-stack"></div>
+      </div>
+    </div>
+
+    <div class="wrap wrap-tight">
+      <p class="label">showcase · 6 Nov</p>
+      <!-- add photos to docs/img/photos/ and list their file names here, e.g. data-photos="crowd.jpg, demo.jpg, wall.jpg" -->
+      <ul class="photos" id="photos" data-photos=""></ul>
+
+      <figure class="reflection">
+        <span class="sticker" style="--tilt:-4deg">reflection</span>
+        <div class="tw-paper refl-paper"><p class="refl-text">[my reflection]</p></div>
+      </figure>
+    </div>
   </section>
 
+  <!-- ===================== 8 · WATCH IT ===================== -->
   <section id="ch8" class="chapter paper" data-title="Watch it" aria-label="Chapter 8, Watch it">
     <div class="wrap">
       <span class="ch-num sticker" style="--tilt:-4deg">chapter 8</span>
       <div class="ch-title" data-ransom-text="Watch it" data-seed="ch8"></div>
       <div class="note" data-lines='["now watch a real game."]'></div>
+
+      <!-- paste a YouTube or Google Drive embed link into data-embed -->
+      <figure class="window video-win" id="video" data-embed="">
+        <div class="title-bar">
+          <div class="title-bar-text">a real game.mp4</div>
+          <div class="title-bar-controls"><button aria-label="Minimize" tabindex="-1"></button><button aria-label="Maximize" tabindex="-1"></button><button aria-label="Close" tabindex="-1"></button></div>
+        </div>
+        <div class="window-body video-body"><div class="video-ph"><span class="label">video coming soon</span></div></div>
+      </figure>
+
+      <div class="final">
+        <ul class="final-checks" id="final-checks"></ul>
+        <div class="note" id="end-note" data-manual data-lines='["ding."]'></div>
+        <div class="ch-title end-title" data-ransom-text="the end" data-seed="end"></div>
+        <div class="boot-links end-links">
+          <a class="mag-link" data-mag="play it" href="https://whats-your-type-v3-anvii.vercel.app" target="_blank" rel="noopener">play it</a>
+          <a class="mag-link" data-mag="read the code" href="https://github.com/agarwalanvii12-cmd/whats-your-type-v3" target="_blank" rel="noopener">read the code</a>
+        </div>
+      </div>
     </div>
   </section>
 
@@ -255,5 +330,6 @@
   <script src="docs.js"></script>
   <script src="prompts.js"></script>
   <script src="chapters.js"></script>
+  <script src="chapters2.js"></script>
 </body>
 </html>
